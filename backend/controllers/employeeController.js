@@ -9,7 +9,11 @@ const Department = require(
 const generateEmployeeId = require(
   "../utils/generateEmployeeId"
 );
-
+const {
+  createActivityLog
+} = require(
+  "../services/activityLogService"
+);
 const employeePopulate = [
   {
     path: "user",
@@ -236,14 +240,38 @@ const createEmployee = async (req, res) => {
     });
 
     const populatedEmployee =
-      await Employee.findById(employee._id)
-        .populate(employeePopulate);
+  await Employee.findById(employee._id)
+    .populate(employeePopulate);
 
-    return res.status(201).json({
-      message:
-        "Employee created successfully",
-      employee: populatedEmployee
-    });
+/*
+|--------------------------------------------------------------------------
+| Activity Log
+|--------------------------------------------------------------------------
+*/
+
+await createActivityLog({
+  req,
+  action: "CREATE",
+  module: "Employee",
+  description: `Created employee ${createdUser.name} (${employee.employeeId})`,
+  targetId: employee._id,
+  targetModel: "Employee",
+  metadata: {
+    employeeId: employee.employeeId,
+    department:
+      existingDepartment.name,
+    designation:
+      employee.designation,
+    employmentType:
+      employee.employmentType
+  }
+});
+
+return res.status(201).json({
+  message:
+    "Employee created successfully",
+  employee: populatedEmployee
+});
   } catch (error) {
     /*
       If user creation succeeded but employee
@@ -836,18 +864,44 @@ const updateEmployee = async (
     }
 
     await user.save();
-    await employee.save();
+await employee.save();
 
-    const populatedEmployee =
-      await Employee.findById(id).populate(
-        employeePopulate
-      );
+const populatedEmployee =
+  await Employee.findById(id).populate(
+    employeePopulate
+  );
 
-    return res.status(200).json({
-      message:
-        "Employee updated successfully",
-      employee: populatedEmployee
-    });
+/*
+|--------------------------------------------------------------------------
+| Activity Log
+|--------------------------------------------------------------------------
+*/
+
+await createActivityLog({
+  req,
+  action: "UPDATE",
+  module: "Employee",
+  description: `Updated employee ${user.name} (${employee.employeeId})`,
+  targetId: employee._id,
+  targetModel: "Employee",
+  metadata: {
+    updatedFields: Object.keys(req.body),
+    employeeId: employee.employeeId,
+    name: user.name,
+    email: user.email,
+    designation: employee.designation,
+    employmentType:
+      employee.employmentType,
+    employmentStatus:
+      employee.employmentStatus
+  }
+});
+
+return res.status(200).json({
+  message:
+    "Employee updated successfully",
+  employee: populatedEmployee
+});
   } catch (error) {
     console.error(
       "Update employee error:",
@@ -961,18 +1015,62 @@ const updateEmployeeStatus = async (
     await employee.save();
 
     const populatedEmployee =
-      await Employee.findById(id).populate(
-        employeePopulate
-      );
+  await Employee.findById(id).populate(
+    employeePopulate
+  );
 
-    return res.status(200).json({
-      message:
-        employmentStatus === "Active"
-          ? "Employee account activated successfully"
-          : `Employee marked as ${employmentStatus} successfully`,
+/*
+|--------------------------------------------------------------------------
+| Activity Log
+|--------------------------------------------------------------------------
+*/
 
-      employee: populatedEmployee
-    });
+let action = "UPDATE";
+
+switch (employmentStatus) {
+  case "Active":
+    action = "ACTIVATE";
+    break;
+
+  case "Inactive":
+    action = "DEACTIVATE";
+    break;
+
+  case "Resigned":
+    action = "UPDATE";
+    break;
+
+  case "Terminated":
+    action = "UPDATE";
+    break;
+
+  default:
+    action = "UPDATE";
+}
+
+await createActivityLog({
+  req,
+  action,
+  module: "Employee",
+  description: `Changed employment status of ${user.name} (${employee.employeeId}) to ${employmentStatus}`,
+  targetId: employee._id,
+  targetModel: "Employee",
+  metadata: {
+    employeeId: employee.employeeId,
+    status: employmentStatus,
+    reason:
+      employee.deactivationReason || ""
+  }
+});
+
+return res.status(200).json({
+  message:
+    employmentStatus === "Active"
+      ? "Employee account activated successfully"
+      : `Employee marked as ${employmentStatus} successfully`,
+
+  employee: populatedEmployee
+});
   } catch (error) {
     console.error(
       "Update employee status error:",
@@ -1029,6 +1127,9 @@ const deleteEmployee = async (
       employee.user
     );
 
+    const previousStatus =
+      employee.employmentStatus;
+
     employee.employmentStatus =
       "Inactive";
 
@@ -1058,6 +1159,30 @@ const deleteEmployee = async (
     );
 
     await employee.save();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
+
+    await createActivityLog({
+      req,
+      action: "DELETE",
+      module: "Employee",
+      description: `Deactivated employee ${
+        user?.name || "Unknown Employee"
+      } (${employee.employeeId})`,
+      targetId: employee._id,
+      targetModel: "Employee",
+      metadata: {
+        employeeId: employee.employeeId,
+        previousStatus,
+        newStatus: "Inactive",
+        reason:
+          employee.deactivationReason
+      }
+    });
 
     return res.status(200).json({
       message:

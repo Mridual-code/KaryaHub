@@ -10,37 +10,45 @@ const roleMiddleware = require(
 );
 
 const {
-  applyForLeave,
-  getMyLeaves,
-  getAllLeaves,
-  getLeaveById,
-  updateLeaveStatus,
-  cancelLeave,
-  getLeaveStats
+  checkIn,
+  checkOut,
+  getMyAttendance,
+  getTodayAttendance,
+  getAllAttendance,
+  markAttendance,
+  updateAttendance,
+  getAttendanceStats
 } = require(
-  "../controllers/leaveController"
+  "../controllers/attendanceController"
 );
 
 // Employee routes
 router.post(
-  "/",
+  "/check-in",
   authMiddleware,
   roleMiddleware("Employee"),
-  applyForLeave
+  checkIn
+);
+
+router.patch(
+  "/check-out",
+  authMiddleware,
+  roleMiddleware("Employee"),
+  checkOut
 );
 
 router.get(
   "/my",
   authMiddleware,
   roleMiddleware("Employee"),
-  getMyLeaves
+  getMyAttendance
 );
 
-router.patch(
-  "/:id/cancel",
+router.get(
+  "/today",
   authMiddleware,
   roleMiddleware("Employee"),
-  cancelLeave
+  getTodayAttendance
 );
 
 // Admin routes
@@ -48,29 +56,28 @@ router.get(
   "/stats",
   authMiddleware,
   roleMiddleware("Admin"),
-  getLeaveStats
+  getAttendanceStats
 );
 
 router.get(
   "/",
   authMiddleware,
   roleMiddleware("Admin"),
-  getAllLeaves
+  getAllAttendance
 );
 
-// Shared route
-router.get(
-  "/:id",
-  authMiddleware,
-  roleMiddleware("Admin", "Employee"),
-  getLeaveById
-);
-
-router.patch(
-  "/:id/status",
+router.post(
+  "/mark",
   authMiddleware,
   roleMiddleware("Admin"),
-  updateLeaveStatus
+  markAttendance
+);
+
+router.put(
+  "/:id",
+  authMiddleware,
+  roleMiddleware("Admin"),
+  updateAttendance
 );
 
 module.exports = router;
