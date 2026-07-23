@@ -5,6 +5,7 @@ const router = express.Router();
 const authMiddleware = require(
   "../middleware/authMiddleware"
 );
+
 const roleMiddleware = require(
   "../middleware/roleMiddleware"
 );
@@ -22,61 +23,65 @@ const {
   "../controllers/attendanceController"
 );
 
-// Employee routes
+router.use(authMiddleware);
+
+/*
+|--------------------------------------------------------------------------
+| Employee attendance routes
+|--------------------------------------------------------------------------
+*/
+
 router.post(
   "/check-in",
-  authMiddleware,
   roleMiddleware("Employee"),
   checkIn
 );
 
 router.patch(
   "/check-out",
-  authMiddleware,
   roleMiddleware("Employee"),
   checkOut
 );
 
 router.get(
   "/my",
-  authMiddleware,
   roleMiddleware("Employee"),
   getMyAttendance
 );
 
 router.get(
   "/today",
-  authMiddleware,
   roleMiddleware("Employee"),
   getTodayAttendance
 );
 
-// Admin routes
+/*
+|--------------------------------------------------------------------------
+| Admin and HR attendance routes
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/stats",
-  authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   getAttendanceStats
 );
 
 router.get(
   "/",
-  authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   getAllAttendance
 );
 
 router.post(
   "/mark",
-  authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   markAttendance
 );
 
 router.put(
   "/:id",
-  authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   updateAttendance
 );
 

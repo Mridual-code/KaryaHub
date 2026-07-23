@@ -33,49 +33,49 @@ const {
 router.get(
   "/department",
   authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   getDepartmentChart
 );
 
 router.get(
   "/attendance",
   authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   getAttendanceChart
 );
 
 router.get(
   "/leaves",
   authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   getLeaveChart
 );
 
 router.get(
   "/hiring",
   authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   getHiringChart
 );
 
 router.get(
   "/attendance-trend",
   authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   getAttendanceTrend
 );
 
 router.get(
   "/leave-trend",
   authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   getLeaveTrend
 );
 
 router.get(
   "/status",
   authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   getEmployeeStatusChart
 );
 

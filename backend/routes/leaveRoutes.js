@@ -5,6 +5,7 @@ const router = express.Router();
 const authMiddleware = require(
   "../middleware/authMiddleware"
 );
+
 const roleMiddleware = require(
   "../middleware/roleMiddleware"
 );
@@ -21,55 +22,71 @@ const {
   "../controllers/leaveController"
 );
 
-// Employee routes
+router.use(authMiddleware);
+
+/*
+|--------------------------------------------------------------------------
+| Employee leave routes
+|--------------------------------------------------------------------------
+*/
+
 router.post(
   "/",
-  authMiddleware,
   roleMiddleware("Employee"),
   applyForLeave
 );
 
 router.get(
   "/my",
-  authMiddleware,
   roleMiddleware("Employee"),
   getMyLeaves
 );
 
 router.patch(
   "/:id/cancel",
-  authMiddleware,
   roleMiddleware("Employee"),
   cancelLeave
 );
 
-// Admin routes
+/*
+|--------------------------------------------------------------------------
+| Admin and HR leave routes
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/stats",
-  authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   getLeaveStats
 );
 
 router.get(
   "/",
-  authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   getAllLeaves
 );
 
-// Shared route
+/*
+|--------------------------------------------------------------------------
+| Shared leave route
+|--------------------------------------------------------------------------
+| Employees must be restricted inside the controller to their own requests.
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/:id",
-  authMiddleware,
-  roleMiddleware("Admin", "Employee"),
+  roleMiddleware(
+    "Admin",
+    "HR",
+    "Employee"
+  ),
   getLeaveById
 );
 
 router.patch(
   "/:id/status",
-  authMiddleware,
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   updateLeaveStatus
 );
 

@@ -142,6 +142,12 @@ const employeeSchema = new mongoose.Schema(
       default: ""
     },
 
+    profilePicture: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
     employmentStatus: {
       type: String,
       enum: [

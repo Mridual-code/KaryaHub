@@ -9,11 +9,38 @@ const Department = require(
 const generateEmployeeId = require(
   "../utils/generateEmployeeId"
 );
+
+const {
+  createNotification
+} = require(
+  "../services/notificationService"
+);
+
 const {
   createActivityLog
 } = require(
   "../services/activityLogService"
 );
+
+const {
+  sendEmail
+} = require(
+  "../services/emailService"
+);
+
+const {
+  welcomeEmployeeTemplate,
+  accountStatusTemplate
+} = require(
+  "../utils/emailTemplates"
+);
+
+/*
+|--------------------------------------------------------------------------
+| Common Employee Populate
+|--------------------------------------------------------------------------
+*/
+
 const employeePopulate = [
   {
     path: "user",
@@ -36,6 +63,12 @@ const employeePopulate = [
   }
 ];
 
+/*
+|--------------------------------------------------------------------------
+| Validate MongoDB Object ID
+|--------------------------------------------------------------------------
+*/
+
 const isValidObjectId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
 };
@@ -44,12 +77,18 @@ const isValidObjectId = (id) => {
 |--------------------------------------------------------------------------
 | Create Employee
 |--------------------------------------------------------------------------
-| Admin creates both:
+| Admin creates:
 | 1. User login account
 | 2. Employee profile
+|--------------------------------------------------------------------------
 */
-const createEmployee = async (req, res) => {
+
+const createEmployee = async (
+  req,
+  res
+) => {
   let createdUser = null;
+  let createdEmployee = null;
 
   try {
     const {
@@ -70,6 +109,12 @@ const createEmployee = async (req, res) => {
       profileImage
     } = req.body;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Required Fields
+    |--------------------------------------------------------------------------
+    */
+
     if (
       !name?.trim() ||
       !email?.trim() ||
@@ -84,12 +129,24 @@ const createEmployee = async (req, res) => {
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Password Validation
+    |--------------------------------------------------------------------------
+    */
+
     if (password.length < 6) {
       return res.status(400).json({
         message:
           "Password must contain at least 6 characters"
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Department Validation
+    |--------------------------------------------------------------------------
+    */
 
     if (!isValidObjectId(department)) {
       return res.status(400).json({
@@ -101,9 +158,10 @@ const createEmployee = async (req, res) => {
       .trim()
       .toLowerCase();
 
-    const existingUser = await User.findOne({
-      email: normalizedEmail
-    });
+    const existingUser =
+      await User.findOne({
+        email: normalizedEmail
+      });
 
     if (existingUser) {
       return res.status(409).json({
@@ -113,7 +171,9 @@ const createEmployee = async (req, res) => {
     }
 
     const existingDepartment =
-      await Department.findById(department);
+      await Department.findById(
+        department
+      );
 
     if (!existingDepartment) {
       return res.status(404).json({
@@ -127,6 +187,12 @@ const createEmployee = async (req, res) => {
           "Cannot assign an employee to an inactive department"
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Manager Validation
+    |--------------------------------------------------------------------------
+    */
 
     if (manager) {
       if (!isValidObjectId(manager)) {
@@ -155,9 +221,14 @@ const createEmployee = async (req, res) => {
       }
     }
 
-    const parsedJoiningDate = new Date(
-      joiningDate
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | Joining Date Validation
+    |--------------------------------------------------------------------------
+    */
+
+    const parsedJoiningDate =
+      new Date(joiningDate);
 
     if (
       Number.isNaN(
@@ -169,19 +240,30 @@ const createEmployee = async (req, res) => {
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Salary Validation
+    |--------------------------------------------------------------------------
+    */
+
     if (
       salary !== undefined &&
       Number(salary) < 0
     ) {
       return res.status(400).json({
-        message: "Salary cannot be negative"
+        message:
+          "Salary cannot be negative"
       });
     }
 
     /*
-      User.js already hashes passwords through
-      pre("save"), so do not hash the password here.
+    |--------------------------------------------------------------------------
+    | Create User Login Account
+    |--------------------------------------------------------------------------
+    | User model should hash the password using pre("save").
+    |--------------------------------------------------------------------------
     */
+
     createdUser = await User.create({
       name: name.trim(),
       email: normalizedEmail,
@@ -190,93 +272,252 @@ const createEmployee = async (req, res) => {
       isActive: true
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Generate Employee ID
+    |--------------------------------------------------------------------------
+    */
+
     const employeeId =
       await generateEmployeeId();
 
-    const employee = await Employee.create({
-      user: createdUser._id,
-      employeeId,
-      department,
-      designation: designation.trim(),
-      employmentType:
-        employmentType || "Full-Time",
-      phone: phone?.trim() || "",
-      dateOfBirth: dateOfBirth || null,
-      gender: gender || "Prefer Not to Say",
+    /*
+    |--------------------------------------------------------------------------
+    | Create Employee Profile
+    |--------------------------------------------------------------------------
+    */
 
-      address: {
-        street:
-          address?.street?.trim() || "",
-        city:
-          address?.city?.trim() || "",
-        state:
-          address?.state?.trim() || "",
-        country:
-          address?.country?.trim() ||
-          "India",
-        postalCode:
-          address?.postalCode?.trim() ||
-          ""
-      },
+    createdEmployee =
+      await Employee.create({
+        user: createdUser._id,
+        employeeId,
+        department,
+        designation:
+          designation.trim(),
 
-      emergencyContact: {
-        name:
-          emergencyContact?.name?.trim() ||
-          "",
-        relationship:
-          emergencyContact?.relationship?.trim() ||
-          "",
+        employmentType:
+          employmentType ||
+          "Full-Time",
+
         phone:
-          emergencyContact?.phone?.trim() ||
-          ""
-      },
+          phone?.trim() || "",
 
-      joiningDate: parsedJoiningDate,
-      salary: Number(salary) || 0,
-      manager: manager || null,
-      profileImage:
-        profileImage?.trim() || "",
-      employmentStatus: "Active"
-    });
+        dateOfBirth:
+          dateOfBirth || null,
+
+        gender:
+          gender ||
+          "Prefer Not to Say",
+
+        address: {
+          street:
+            address?.street?.trim() ||
+            "",
+
+          city:
+            address?.city?.trim() ||
+            "",
+
+          state:
+            address?.state?.trim() ||
+            "",
+
+          country:
+            address?.country?.trim() ||
+            "India",
+
+          postalCode:
+            address?.postalCode?.trim() ||
+            ""
+        },
+
+        emergencyContact: {
+          name:
+            emergencyContact?.name?.trim() ||
+            "",
+
+          relationship:
+            emergencyContact?.relationship?.trim() ||
+            "",
+
+          phone:
+            emergencyContact?.phone?.trim() ||
+            ""
+        },
+
+        joiningDate:
+          parsedJoiningDate,
+
+        salary:
+          Number(salary) || 0,
+
+        manager:
+          manager || null,
+
+        profileImage:
+          profileImage?.trim() ||
+          "",
+
+        employmentStatus:
+          "Active"
+      });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employee Notification
+    |--------------------------------------------------------------------------
+    | Notification failure should not cancel employee creation.
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createNotification({
+        recipient:
+          createdUser._id,
+
+        sender:
+          req.user._id,
+
+        title:
+          "Welcome to KaryaHub",
+
+        message:
+          `Your employee account has been created successfully. Your employee ID is ${createdEmployee.employeeId}.`,
+
+        type:
+          "Employee",
+
+        relatedId:
+          createdEmployee._id,
+
+        relatedModel:
+          "Employee",
+
+        targetUrl:
+          "/employee/profile"
+      });
+    } catch (notificationError) {
+      console.error(
+        "Employee welcome notification error:",
+        notificationError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Welcome Email
+    |--------------------------------------------------------------------------
+    | Email failure should not delete the employee account.
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await sendEmail({
+        to:
+          createdUser.email,
+
+        subject:
+          "Welcome to KaryaHub",
+
+        html:
+          welcomeEmployeeTemplate({
+            name:
+              createdUser.name,
+
+            employeeId:
+              createdEmployee.employeeId,
+
+            email:
+              createdUser.email,
+
+            temporaryPassword:
+              password
+          })
+      });
+    } catch (emailError) {
+      console.error(
+        "Welcome email error:",
+        emailError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createActivityLog({
+        req,
+
+        action:
+          "CREATE",
+
+        module:
+          "Employee",
+
+        description:
+          `Created employee ${createdUser.name} (${createdEmployee.employeeId})`,
+
+        targetId:
+          createdEmployee._id,
+
+        targetModel:
+          "Employee",
+
+        metadata: {
+          employeeId:
+            createdEmployee.employeeId,
+
+          department:
+            existingDepartment.name,
+
+          designation:
+            createdEmployee.designation,
+
+          employmentType:
+            createdEmployee.employmentType
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Employee activity log error:",
+        activityError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Populate Employee Response
+    |--------------------------------------------------------------------------
+    */
 
     const populatedEmployee =
-  await Employee.findById(employee._id)
-    .populate(employeePopulate);
+      await Employee.findById(
+        createdEmployee._id
+      ).populate(employeePopulate);
 
-/*
-|--------------------------------------------------------------------------
-| Activity Log
-|--------------------------------------------------------------------------
-*/
+    return res.status(201).json({
+      message:
+        "Employee created successfully",
 
-await createActivityLog({
-  req,
-  action: "CREATE",
-  module: "Employee",
-  description: `Created employee ${createdUser.name} (${employee.employeeId})`,
-  targetId: employee._id,
-  targetModel: "Employee",
-  metadata: {
-    employeeId: employee.employeeId,
-    department:
-      existingDepartment.name,
-    designation:
-      employee.designation,
-    employmentType:
-      employee.employmentType
-  }
-});
-
-return res.status(201).json({
-  message:
-    "Employee created successfully",
-  employee: populatedEmployee
-});
+      employee:
+        populatedEmployee
+    });
   } catch (error) {
     /*
-      If user creation succeeded but employee
-      creation failed, remove that incomplete user.
+    |--------------------------------------------------------------------------
+    | Rollback Incomplete Employee Creation
+    |--------------------------------------------------------------------------
     */
+
+    if (createdEmployee?._id) {
+      await Employee.findByIdAndDelete(
+        createdEmployee._id
+      ).catch(() => {});
+    }
+
     if (createdUser?._id) {
       await User.findByIdAndDelete(
         createdUser._id
@@ -288,6 +529,12 @@ return res.status(201).json({
       error
     );
 
+    /*
+    |--------------------------------------------------------------------------
+    | Duplicate Field Error
+    |--------------------------------------------------------------------------
+    */
+
     if (error.code === 11000) {
       const duplicateField =
         Object.keys(
@@ -295,18 +542,34 @@ return res.status(201).json({
         )[0] || "field";
 
       return res.status(409).json({
-        message: `An employee with this ${duplicateField} already exists`
+        message:
+          `An employee with this ${duplicateField} already exists`
       });
     }
 
-    if (error.name === "ValidationError") {
+    /*
+    |--------------------------------------------------------------------------
+    | Mongoose Validation Error
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      error.name ===
+      "ValidationError"
+    ) {
       const validationMessage =
-        Object.values(error.errors)
-          .map((item) => item.message)
+        Object.values(
+          error.errors
+        )
+          .map(
+            (item) =>
+              item.message
+          )
           .join(", ");
 
       return res.status(400).json({
-        message: validationMessage
+        message:
+          validationMessage
       });
     }
 
@@ -316,6 +579,7 @@ return res.status(201).json({
     });
   }
 };
+
 
 /*
 |--------------------------------------------------------------------------
@@ -624,15 +888,29 @@ const updateEmployee = async (
       profileImage
     } = req.body;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Email
+    |--------------------------------------------------------------------------
+    */
+
     if (email !== undefined) {
       const normalizedEmail = email
         .trim()
         .toLowerCase();
 
+      if (!normalizedEmail) {
+        return res.status(400).json({
+          message: "Email cannot be empty"
+        });
+      }
+
       const duplicateUser =
         await User.findOne({
           email: normalizedEmail,
-          _id: { $ne: user._id }
+          _id: {
+            $ne: user._id
+          }
         });
 
       if (duplicateUser) {
@@ -645,6 +923,12 @@ const updateEmployee = async (
       user.email = normalizedEmail;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Name
+    |--------------------------------------------------------------------------
+    */
+
     if (name !== undefined) {
       if (!name.trim()) {
         return res.status(400).json({
@@ -655,10 +939,19 @@ const updateEmployee = async (
       user.name = name.trim();
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Department
+    |--------------------------------------------------------------------------
+    */
+
     if (department !== undefined) {
-      if (!isValidObjectId(department)) {
+      if (
+        !isValidObjectId(department)
+      ) {
         return res.status(400).json({
-          message: "Invalid department ID"
+          message:
+            "Invalid department ID"
         });
       }
 
@@ -669,32 +962,48 @@ const updateEmployee = async (
 
       if (!selectedDepartment) {
         return res.status(404).json({
-          message: "Department not found"
+          message:
+            "Department not found"
         });
       }
 
-      if (!selectedDepartment.isActive) {
+      if (
+        !selectedDepartment.isActive
+      ) {
         return res.status(400).json({
           message:
             "Cannot assign employee to an inactive department"
         });
       }
 
-      employee.department = department;
+      employee.department =
+        department;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update Manager
+    |--------------------------------------------------------------------------
+    */
 
     if (manager !== undefined) {
       if (
         manager !== null &&
         manager !== ""
       ) {
-        if (!isValidObjectId(manager)) {
+        if (
+          !isValidObjectId(manager)
+        ) {
           return res.status(400).json({
-            message: "Invalid manager ID"
+            message:
+              "Invalid manager ID"
           });
         }
 
-        if (manager === id) {
+        if (
+          manager.toString() ===
+          id.toString()
+        ) {
           return res.status(400).json({
             message:
               "An employee cannot be their own manager"
@@ -702,16 +1011,20 @@ const updateEmployee = async (
         }
 
         const selectedManager =
-          await Employee.findById(manager);
+          await Employee.findById(
+            manager
+          );
 
         if (!selectedManager) {
           return res.status(404).json({
-            message: "Manager not found"
+            message:
+              "Manager not found"
           });
         }
 
         if (
-          selectedManager.employmentStatus !==
+          selectedManager
+            .employmentStatus !==
           "Active"
         ) {
           return res.status(400).json({
@@ -726,6 +1039,12 @@ const updateEmployee = async (
       }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Designation
+    |--------------------------------------------------------------------------
+    */
+
     if (designation !== undefined) {
       if (!designation.trim()) {
         return res.status(400).json({
@@ -738,7 +1057,15 @@ const updateEmployee = async (
         designation.trim();
     }
 
-    if (employmentType !== undefined) {
+    /*
+    |--------------------------------------------------------------------------
+    | Update Employment Type
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      employmentType !== undefined
+    ) {
       const allowedTypes = [
         "Full-Time",
         "Part-Time",
@@ -761,77 +1088,137 @@ const updateEmployee = async (
         employmentType;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Basic Information
+    |--------------------------------------------------------------------------
+    */
+
     if (phone !== undefined) {
-      employee.phone = phone.trim();
+      employee.phone =
+        phone?.trim() || "";
     }
 
-    if (dateOfBirth !== undefined) {
-      employee.dateOfBirth =
-        dateOfBirth || null;
+    if (
+      dateOfBirth !== undefined
+    ) {
+      if (dateOfBirth) {
+        const parsedDateOfBirth =
+          new Date(dateOfBirth);
+
+        if (
+          Number.isNaN(
+            parsedDateOfBirth.getTime()
+          )
+        ) {
+          return res.status(400).json({
+            message:
+              "Invalid date of birth"
+          });
+        }
+
+        employee.dateOfBirth =
+          parsedDateOfBirth;
+      } else {
+        employee.dateOfBirth = null;
+      }
     }
 
     if (gender !== undefined) {
       employee.gender = gender;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Address
+    |--------------------------------------------------------------------------
+    */
+
     if (address !== undefined) {
       employee.address = {
         street:
-          address.street !== undefined
+          address?.street !==
+          undefined
             ? address.street.trim()
-            : employee.address.street,
+            : employee.address
+                ?.street || "",
 
         city:
-          address.city !== undefined
+          address?.city !== undefined
             ? address.city.trim()
-            : employee.address.city,
+            : employee.address
+                ?.city || "",
 
         state:
-          address.state !== undefined
+          address?.state !==
+          undefined
             ? address.state.trim()
-            : employee.address.state,
+            : employee.address
+                ?.state || "",
 
         country:
-          address.country !== undefined
+          address?.country !==
+          undefined
             ? address.country.trim()
-            : employee.address.country,
+            : employee.address
+                ?.country || "India",
 
         postalCode:
-          address.postalCode !== undefined
+          address?.postalCode !==
+          undefined
             ? address.postalCode.trim()
-            : employee.address.postalCode
+            : employee.address
+                ?.postalCode || ""
       };
     }
 
-    if (emergencyContact !== undefined) {
+    /*
+    |--------------------------------------------------------------------------
+    | Update Emergency Contact
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      emergencyContact !== undefined
+    ) {
       employee.emergencyContact = {
         name:
-          emergencyContact.name !==
+          emergencyContact?.name !==
           undefined
             ? emergencyContact.name.trim()
-            : employee.emergencyContact
-                .name,
+            : employee
+                .emergencyContact
+                ?.name || "",
 
         relationship:
-          emergencyContact.relationship !==
+          emergencyContact
+            ?.relationship !==
           undefined
-            ? emergencyContact.relationship.trim()
-            : employee.emergencyContact
-                .relationship,
+            ? emergencyContact
+                .relationship.trim()
+            : employee
+                .emergencyContact
+                ?.relationship || "",
 
         phone:
-          emergencyContact.phone !==
+          emergencyContact?.phone !==
           undefined
             ? emergencyContact.phone.trim()
-            : employee.emergencyContact
-                .phone
+            : employee
+                .emergencyContact
+                ?.phone || ""
       };
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Joining Date
+    |--------------------------------------------------------------------------
+    */
+
     if (joiningDate !== undefined) {
-      const parsedJoiningDate = new Date(
-        joiningDate
-      );
+      const parsedJoiningDate =
+        new Date(joiningDate);
 
       if (
         Number.isNaN(
@@ -839,7 +1226,8 @@ const updateEmployee = async (
         )
       ) {
         return res.status(400).json({
-          message: "Invalid joining date"
+          message:
+            "Invalid joining date"
         });
       }
 
@@ -847,75 +1235,149 @@ const updateEmployee = async (
         parsedJoiningDate;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Salary
+    |--------------------------------------------------------------------------
+    */
+
     if (salary !== undefined) {
-      if (Number(salary) < 0) {
+      const numericSalary =
+        Number(salary);
+
+      if (
+        Number.isNaN(numericSalary)
+      ) {
+        return res.status(400).json({
+          message:
+            "Salary must be a valid number"
+        });
+      }
+
+      if (numericSalary < 0) {
         return res.status(400).json({
           message:
             "Salary cannot be negative"
         });
       }
 
-      employee.salary = Number(salary);
+      employee.salary =
+        numericSalary;
     }
 
-    if (profileImage !== undefined) {
+    if (
+      profileImage !== undefined
+    ) {
       employee.profileImage =
-        profileImage.trim();
+        profileImage?.trim() || "";
     }
 
     await user.save();
-await employee.save();
+    await employee.save();
 
-const populatedEmployee =
-  await Employee.findById(id).populate(
-    employeePopulate
-  );
+    /*
+    |--------------------------------------------------------------------------
+    | Notify Employee
+    |--------------------------------------------------------------------------
+    */
 
-/*
-|--------------------------------------------------------------------------
-| Activity Log
-|--------------------------------------------------------------------------
-*/
+    try {
+      await createNotification({
+        recipient: user._id,
+        sender: req.user._id,
+        title: "Profile Updated",
+        message:
+          "Your employee profile has been updated by the administrator.",
+        type: "Employee",
+        relatedId: employee._id,
+        relatedModel: "Employee",
+        targetUrl:
+          "/employee/profile"
+      });
+    } catch (notificationError) {
+      console.error(
+        "Employee update notification error:",
+        notificationError
+      );
+    }
 
-await createActivityLog({
-  req,
-  action: "UPDATE",
-  module: "Employee",
-  description: `Updated employee ${user.name} (${employee.employeeId})`,
-  targetId: employee._id,
-  targetModel: "Employee",
-  metadata: {
-    updatedFields: Object.keys(req.body),
-    employeeId: employee.employeeId,
-    name: user.name,
-    email: user.email,
-    designation: employee.designation,
-    employmentType:
-      employee.employmentType,
-    employmentStatus:
-      employee.employmentStatus
-  }
-});
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
 
-return res.status(200).json({
-  message:
-    "Employee updated successfully",
-  employee: populatedEmployee
-});
+    try {
+      await createActivityLog({
+        req,
+        action: "UPDATE",
+        module: "Employee",
+        description:
+          `Updated employee ${user.name} (${employee.employeeId})`,
+        targetId: employee._id,
+        targetModel: "Employee",
+        metadata: {
+          updatedFields:
+            Object.keys(req.body),
+          employeeId:
+            employee.employeeId,
+          name: user.name,
+          email: user.email,
+          designation:
+            employee.designation,
+          employmentType:
+            employee.employmentType,
+          employmentStatus:
+            employee.employmentStatus
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Employee update activity-log error:",
+        activityError
+      );
+    }
+
+    const populatedEmployee =
+      await Employee.findById(
+        employee._id
+      ).populate(employeePopulate);
+
+    return res.status(200).json({
+      message:
+        "Employee updated successfully",
+      employee: populatedEmployee
+    });
   } catch (error) {
     console.error(
       "Update employee error:",
       error
     );
 
-    if (error.name === "ValidationError") {
+    if (
+      error.name ===
+      "ValidationError"
+    ) {
       const validationMessage =
-        Object.values(error.errors)
-          .map((item) => item.message)
+        Object.values(
+          error.errors
+        )
+          .map(
+            (item) =>
+              item.message
+          )
           .join(", ");
 
       return res.status(400).json({
-        message: validationMessage
+        message:
+          validationMessage
+      });
+    }
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message:
+          "Employee data already exists"
       });
     }
 
@@ -925,6 +1387,8 @@ return res.status(200).json({
     });
   }
 };
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -946,7 +1410,8 @@ const updateEmployeeStatus = async (
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({
-        message: "Invalid employee ID"
+        message:
+          "Invalid employee ID"
       });
     }
 
@@ -973,13 +1438,15 @@ const updateEmployeeStatus = async (
 
     if (!employee) {
       return res.status(404).json({
-        message: "Employee not found"
+        message:
+          "Employee not found"
       });
     }
 
-    const user = await User.findById(
-      employee.user
-    );
+    const user =
+      await User.findById(
+        employee.user
+      );
 
     if (!user) {
       return res.status(404).json({
@@ -988,89 +1455,214 @@ const updateEmployeeStatus = async (
       });
     }
 
+    const previousStatus =
+      employee.employmentStatus;
+
+    if (
+      previousStatus ===
+      employmentStatus
+    ) {
+      return res.status(400).json({
+        message:
+          `Employee status is already ${employmentStatus}`
+      });
+    }
+
     employee.employmentStatus =
       employmentStatus;
 
-    if (employmentStatus === "Active") {
+    if (
+      employmentStatus ===
+      "Active"
+    ) {
       user.isActive = true;
       employee.leavingDate = null;
-      employee.deactivationReason = "";
+      employee.deactivationReason =
+        "";
     } else {
       user.isActive = false;
-      employee.leavingDate = new Date();
+      employee.leavingDate =
+        new Date();
+
       employee.deactivationReason =
         deactivationReason.trim();
 
-      /*
-        Remove an inactive employee as manager
-        from employees reporting to them.
-      */
       await Employee.updateMany(
-        { manager: employee._id },
-        { $set: { manager: null } }
+        {
+          manager:
+            employee._id
+        },
+        {
+          $set: {
+            manager: null
+          }
+        }
+      );
+
+      await Department.updateMany(
+        {
+          departmentHead:
+            employee._id
+        },
+        {
+          $set: {
+            departmentHead: null
+          }
+        }
       );
     }
 
     await user.save();
     await employee.save();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Notification
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createNotification({
+        recipient: user._id,
+        sender: req.user._id,
+
+        title:
+          employmentStatus ===
+          "Active"
+            ? "Account Activated"
+            : `Employment Status: ${employmentStatus}`,
+
+        message:
+          employmentStatus ===
+          "Active"
+            ? "Your employee account has been activated."
+            : `Your employment status has been changed to ${employmentStatus}.${
+                employee.deactivationReason
+                  ? ` Reason: ${employee.deactivationReason}`
+                  : ""
+              }`,
+
+        type: "Employee",
+        relatedId:
+          employee._id,
+        relatedModel:
+          "Employee",
+        targetUrl:
+          "/employee/profile"
+      });
+    } catch (notificationError) {
+      console.error(
+        "Account-status notification error:",
+        notificationError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await sendEmail({
+        to: user.email,
+
+        subject:
+          `KaryaHub Account ${employmentStatus}`,
+
+        html:
+          accountStatusTemplate({
+            employeeName:
+              user.name,
+
+            status:
+              employmentStatus,
+
+            reason:
+              employee
+                .deactivationReason ||
+              ""
+          })
+      });
+    } catch (emailError) {
+      console.error(
+        "Account-status email error:",
+        emailError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
+
+    let action = "UPDATE";
+
+    if (
+      employmentStatus ===
+      "Active"
+    ) {
+      action = "ACTIVATE";
+    } else if (
+      employmentStatus ===
+      "Inactive"
+    ) {
+      action = "DEACTIVATE";
+    }
+
+    try {
+      await createActivityLog({
+        req,
+        action,
+        module: "Employee",
+
+        description:
+          `Changed employment status of ${user.name} (${employee.employeeId}) from ${previousStatus} to ${employmentStatus}`,
+
+        targetId:
+          employee._id,
+
+        targetModel:
+          "Employee",
+
+        metadata: {
+          employeeId:
+            employee.employeeId,
+
+          previousStatus,
+
+          newStatus:
+            employmentStatus,
+
+          reason:
+            employee
+              .deactivationReason ||
+            ""
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Status activity-log error:",
+        activityError
+      );
+    }
+
     const populatedEmployee =
-  await Employee.findById(id).populate(
-    employeePopulate
-  );
+      await Employee.findById(
+        employee._id
+      ).populate(employeePopulate);
 
-/*
-|--------------------------------------------------------------------------
-| Activity Log
-|--------------------------------------------------------------------------
-*/
+    return res.status(200).json({
+      message:
+        employmentStatus ===
+        "Active"
+          ? "Employee account activated successfully"
+          : `Employee marked as ${employmentStatus} successfully`,
 
-let action = "UPDATE";
-
-switch (employmentStatus) {
-  case "Active":
-    action = "ACTIVATE";
-    break;
-
-  case "Inactive":
-    action = "DEACTIVATE";
-    break;
-
-  case "Resigned":
-    action = "UPDATE";
-    break;
-
-  case "Terminated":
-    action = "UPDATE";
-    break;
-
-  default:
-    action = "UPDATE";
-}
-
-await createActivityLog({
-  req,
-  action,
-  module: "Employee",
-  description: `Changed employment status of ${user.name} (${employee.employeeId}) to ${employmentStatus}`,
-  targetId: employee._id,
-  targetModel: "Employee",
-  metadata: {
-    employeeId: employee.employeeId,
-    status: employmentStatus,
-    reason:
-      employee.deactivationReason || ""
-  }
-});
-
-return res.status(200).json({
-  message:
-    employmentStatus === "Active"
-      ? "Employee account activated successfully"
-      : `Employee marked as ${employmentStatus} successfully`,
-
-  employee: populatedEmployee
-});
+      employee:
+        populatedEmployee
+    });
   } catch (error) {
     console.error(
       "Update employee status error:",
@@ -1083,6 +1675,8 @@ return res.status(200).json({
     });
   }
 };
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -1100,7 +1694,8 @@ const deleteEmployee = async (
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({
-        message: "Invalid employee ID"
+        message:
+          "Invalid employee ID"
       });
     }
 
@@ -1109,7 +1704,8 @@ const deleteEmployee = async (
 
     if (!employee) {
       return res.status(404).json({
-        message: "Employee not found"
+        message:
+          "Employee not found"
       });
     }
 
@@ -1123,9 +1719,10 @@ const deleteEmployee = async (
       });
     }
 
-    const user = await User.findById(
-      employee.user
-    );
+    const user =
+      await User.findById(
+        employee.user
+      );
 
     const previousStatus =
       employee.employmentStatus;
@@ -1133,10 +1730,13 @@ const deleteEmployee = async (
     employee.employmentStatus =
       "Inactive";
 
-    employee.leavingDate = new Date();
+    employee.leavingDate =
+      new Date();
 
     employee.deactivationReason =
-      req.body.deactivationReason?.trim() ||
+      req.body
+        .deactivationReason
+        ?.trim() ||
       "Employee account deactivated by Admin";
 
     if (user) {
@@ -1145,20 +1745,108 @@ const deleteEmployee = async (
     }
 
     await Employee.updateMany(
-      { manager: employee._id },
-      { $set: { manager: null } }
+      {
+        manager:
+          employee._id
+      },
+      {
+        $set: {
+          manager: null
+        }
+      }
     );
 
-    /*
-      If this employee was a department head,
-      remove them as department head.
-    */
     await Department.updateMany(
-      { departmentHead: employee._id },
-      { $set: { departmentHead: null } }
+      {
+        departmentHead:
+          employee._id
+      },
+      {
+        $set: {
+          departmentHead: null
+        }
+      }
     );
 
     await employee.save();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification and Email
+    |--------------------------------------------------------------------------
+    */
+
+    if (user?._id) {
+      try {
+        await createNotification({
+          recipient:
+            user._id,
+
+          sender:
+            req.user._id,
+
+          title:
+            "Account Deactivated",
+
+          message:
+            `Your employee account has been deactivated.${
+              employee.deactivationReason
+                ? ` Reason: ${employee.deactivationReason}`
+                : ""
+            }`,
+
+          type:
+            "Employee",
+
+          relatedId:
+            employee._id,
+
+          relatedModel:
+            "Employee",
+
+          targetUrl:
+            "/employee/profile"
+        });
+      } catch (
+        notificationError
+      ) {
+        console.error(
+          "Deactivate notification error:",
+          notificationError
+        );
+      }
+
+      if (user.email) {
+        try {
+          await sendEmail({
+            to:
+              user.email,
+
+            subject:
+              "KaryaHub Account Deactivated",
+
+            html:
+              accountStatusTemplate({
+                employeeName:
+                  user.name,
+
+                status:
+                  "Inactive",
+
+                reason:
+                  employee
+                    .deactivationReason ||
+                  ""
+              })
+          });
+        } catch (emailError) {
+          console.error(
+            "Deactivate email error:",
+            emailError
+          );
+        }
+      }
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -1166,23 +1854,47 @@ const deleteEmployee = async (
     |--------------------------------------------------------------------------
     */
 
-    await createActivityLog({
-      req,
-      action: "DELETE",
-      module: "Employee",
-      description: `Deactivated employee ${
-        user?.name || "Unknown Employee"
-      } (${employee.employeeId})`,
-      targetId: employee._id,
-      targetModel: "Employee",
-      metadata: {
-        employeeId: employee.employeeId,
-        previousStatus,
-        newStatus: "Inactive",
-        reason:
-          employee.deactivationReason
-      }
-    });
+    try {
+      await createActivityLog({
+        req,
+        action:
+          "DELETE",
+
+        module:
+          "Employee",
+
+        description:
+          `Deactivated employee ${
+            user?.name ||
+            "Unknown Employee"
+          } (${employee.employeeId})`,
+
+        targetId:
+          employee._id,
+
+        targetModel:
+          "Employee",
+
+        metadata: {
+          employeeId:
+            employee.employeeId,
+
+          previousStatus,
+
+          newStatus:
+            "Inactive",
+
+          reason:
+            employee
+              .deactivationReason
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Deactivate activity-log error:",
+        activityError
+      );
+    }
 
     return res.status(200).json({
       message:
@@ -1200,6 +1912,8 @@ const deleteEmployee = async (
     });
   }
 };
+
+    
 
 /*
 |--------------------------------------------------------------------------

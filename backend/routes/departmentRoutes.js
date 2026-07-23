@@ -22,17 +22,41 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+/*
+|--------------------------------------------------------------------------
+| View Departments
+|--------------------------------------------------------------------------
+| Admin, HR and Employees can view departments.
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/",
-  roleMiddleware("Admin", "Employee"),
+  roleMiddleware(
+    "Admin",
+    "HR",
+    "Employee"
+  ),
   getDepartments
 );
 
 router.get(
   "/:id",
-  roleMiddleware("Admin", "Employee"),
+  roleMiddleware(
+    "Admin",
+    "HR",
+    "Employee"
+  ),
   getDepartmentById
 );
+
+/*
+|--------------------------------------------------------------------------
+| Department Management
+|--------------------------------------------------------------------------
+| Only Admin can modify departments.
+|--------------------------------------------------------------------------
+*/
 
 router.post(
   "/",
@@ -42,7 +66,7 @@ router.post(
 
 router.put(
   "/:id",
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin","HR"),
   updateDepartment
 );
 

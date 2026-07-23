@@ -1,16 +1,24 @@
 require("dotenv").config();
 
 const mongoose = require("mongoose");
-const connectDatabase = require("../config/db");
-const seedAdmin = require("./adminSeeder");
+
+const connectDatabase = require(
+  "../config/db"
+);
+
+const seedSystemUsers = require(
+  "./userSeeder"
+);
 
 const runSeeder = async () => {
   try {
     await connectDatabase();
 
-    await seedAdmin();
+    await seedSystemUsers();
 
-    console.log("Database seeding completed");
+    console.log(
+      "Database seeding completed"
+    );
 
     await mongoose.connection.close();
 

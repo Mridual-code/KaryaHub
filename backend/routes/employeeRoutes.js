@@ -38,12 +38,14 @@ router.get(
 
 /*
 |--------------------------------------------------------------------------
-| Admin statistics
+| Employee statistics
+|--------------------------------------------------------------------------
+| Admin and HR can view workforce statistics.
 |--------------------------------------------------------------------------
 */
 router.get(
   "/stats",
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   getEmployeeStats
 );
 
@@ -52,36 +54,48 @@ router.get(
 | Employee CRUD
 |--------------------------------------------------------------------------
 */
+
+// Admin and HR can create employees
 router.post(
   "/",
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   createEmployee
 );
 
+// Admin and HR can view all employees
 router.get(
   "/",
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   getEmployees
 );
 
+// Admin and HR can view any employee.
+// Employee access must still be restricted inside the controller.
 router.get(
   "/:id",
-  roleMiddleware("Admin", "Employee"),
+  roleMiddleware(
+    "Admin",
+    "HR",
+    "Employee"
+  ),
   getEmployeeById
 );
 
+// Admin and HR can update employee details
 router.put(
   "/:id",
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   updateEmployee
 );
 
+// Admin and HR can activate or deactivate employees
 router.patch(
   "/:id/status",
-  roleMiddleware("Admin"),
+  roleMiddleware("Admin", "HR"),
   updateEmployeeStatus
 );
 
+// Permanent deletion remains Admin-only
 router.delete(
   "/:id",
   roleMiddleware("Admin"),

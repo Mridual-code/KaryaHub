@@ -25,10 +25,10 @@ const attendanceSchema =
       },
 
       workingHours: {
-  type: Number,
-  default: 0,
-  min: 0
-},
+        type: Number,
+        default: 0,
+        min: 0
+      },
 
       status: {
         type: String,

@@ -3,15 +3,23 @@ const mongoose = require("mongoose");
 const Attendance = require(
   "../models/Attendance"
 );
-const Employee = require("../models/Employee");
 const LeaveRequest = require(
   "../models/LeaveRequest"
+);
+const Employee = require(
+  "../models/Employee"
+);
+
+const {
+  createNotification
+} = require(
+  "../services/notificationService"
 );
 
 const getStartOfDay = require(
   "../utils/getStartOfDay"
 );
-const calculateWorkingHours = require(
+const calculateWorkingMinutes = require(
   "../utils/calculateWorkingHours"
 );
 const {
@@ -180,8 +188,8 @@ const checkOut = async (req, res) => {
 
     attendance.checkOut = now;
 
-    attendance.workingHours =
-  calculateWorkingHours(
+    attendance.workingMinutes =
+  calculateWorkingMinutes(
     attendance.checkIn,
     now
   );
@@ -546,12 +554,28 @@ const markAttendance = async (
       notes = ""
     } = req.body;
 
-    if (!employeeId || !date || !status) {
+    /*
+    |--------------------------------------------------------------------------
+    | Required Fields
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !employeeId ||
+      !date ||
+      !status
+    ) {
       return res.status(400).json({
         message:
           "Employee, date and status are required"
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Employee ID
+    |--------------------------------------------------------------------------
+    */
 
     if (
       !mongoose.Types.ObjectId.isValid(
@@ -564,8 +588,19 @@ const markAttendance = async (
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Find Employee
+    |--------------------------------------------------------------------------
+    */
+
     const employee =
-      await Employee.findById(employeeId);
+      await Employee.findById(
+        employeeId
+      ).populate(
+        "user",
+        "name email role"
+      );
 
     if (!employee) {
       return res.status(404).json({
@@ -574,19 +609,50 @@ const markAttendance = async (
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Attendance Date
+    |--------------------------------------------------------------------------
+    */
+
     const attendanceDate =
       getStartOfDay(date);
+
+    if (
+      Number.isNaN(
+        attendanceDate.getTime()
+      )
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid attendance date"
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Parse Check-In and Check-Out
+    |--------------------------------------------------------------------------
+    */
 
     let parsedCheckIn = null;
     let parsedCheckOut = null;
 
     if (checkIn) {
-      parsedCheckIn = new Date(checkIn);
+      parsedCheckIn =
+        new Date(checkIn);
     }
 
     if (checkOut) {
-      parsedCheckOut = new Date(checkOut);
+      parsedCheckOut =
+        new Date(checkOut);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Check-In
+    |--------------------------------------------------------------------------
+    */
 
     if (
       parsedCheckIn &&
@@ -599,6 +665,12 @@ const markAttendance = async (
           "Invalid check-in time"
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Check-Out
+    |--------------------------------------------------------------------------
+    */
 
     if (
       parsedCheckOut &&
@@ -615,7 +687,8 @@ const markAttendance = async (
     if (
       parsedCheckIn &&
       parsedCheckOut &&
-      parsedCheckOut <= parsedCheckIn
+      parsedCheckOut <=
+        parsedCheckIn
     ) {
       return res.status(400).json({
         message:
@@ -623,27 +696,47 @@ const markAttendance = async (
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate Working Minutes
+    |--------------------------------------------------------------------------
+    */
+
     const workingMinutes =
       calculateWorkingMinutes(
         parsedCheckIn,
         parsedCheckOut
       );
 
+    /*
+    |--------------------------------------------------------------------------
+    | Create or Update Attendance
+    |--------------------------------------------------------------------------
+    */
+
     const attendance =
       await Attendance.findOneAndUpdate(
         {
-          employee: employeeId,
-          date: attendanceDate
+          employee:
+            employeeId,
+          date:
+            attendanceDate
         },
         {
-          employee: employeeId,
-          date: attendanceDate,
+          employee:
+            employeeId,
+          date:
+            attendanceDate,
           status,
-          checkIn: parsedCheckIn,
-          checkOut: parsedCheckOut,
+          checkIn:
+            parsedCheckIn,
+          checkOut:
+            parsedCheckOut,
           workingMinutes,
-          notes,
-          markedBy: req.user._id
+          notes:
+            notes?.trim() || "",
+          markedBy:
+            req.user._id
         },
         {
           new: true,
@@ -651,46 +744,154 @@ const markAttendance = async (
           runValidators: true,
           setDefaultsOnInsert: true
         }
-      ).populate({
-        path: "employee",
-        populate: [
-          {
-            path: "user",
-            select: "name email"
-          },
-          {
-            path: "department",
-            select: "name"
-          }
-        ]
-      });
+      )
+        .populate({
+          path:
+            "employee",
 
-    await createActivityLog({
-      req,
-      action: "MARK_ATTENDANCE",
-      module: "Attendance",
-      description: `Marked attendance for ${attendance.employee.user.name}`,
-      targetId: attendance._id,
-      targetModel: "Attendance",
-      metadata: {
-        employee: attendance.employee._id,
-        employeeId:
-          attendance.employee.employeeId,
-        date: attendance.date,
-        status: attendance.status,
-        checkIn:
-          attendance.checkIn,
-        checkOut:
-          attendance.checkOut,
-        workingMinutes:
-          attendance.workingMinutes,
-        markedBy: req.user._id
+          select:
+            "employeeId designation department employmentStatus",
+
+          populate: [
+            {
+              path:
+                "user",
+
+              select:
+                "name email"
+            },
+            {
+              path:
+                "department",
+
+              select:
+                "name"
+            }
+          ]
+        })
+        .populate(
+          "markedBy",
+          "name email role"
+        );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notify Employee
+    |--------------------------------------------------------------------------
+    | Notification failure should not cancel attendance marking.
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      employee.user?._id
+    ) {
+      try {
+        await createNotification({
+          recipient:
+            employee.user._id,
+
+          sender:
+            req.user._id,
+
+          title:
+            "Attendance Updated",
+
+          message:
+            `Your attendance for ${new Date(
+              attendance.date
+            ).toLocaleDateString()} has been marked as ${attendance.status}.`,
+
+          type:
+            "Attendance",
+
+          relatedId:
+            attendance._id,
+
+          relatedModel:
+            "Attendance",
+
+          targetUrl:
+            "/employee/attendance"
+        });
+      } catch (
+        notificationError
+      ) {
+        console.error(
+          "Mark attendance notification error:",
+          notificationError
+        );
       }
-    });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    | Activity-log failure should not cancel attendance marking.
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createActivityLog({
+        req,
+
+        action:
+          "MARK_ATTENDANCE",
+
+        module:
+          "Attendance",
+
+        description:
+          `Marked attendance for ${
+            attendance.employee
+              ?.user?.name ||
+            employee.user?.name ||
+            employee.employeeId
+          }`,
+
+        targetId:
+          attendance._id,
+
+        targetModel:
+          "Attendance",
+
+        metadata: {
+          employee:
+            employee._id,
+
+          employeeId:
+            employee.employeeId,
+
+          date:
+            attendance.date,
+
+          status:
+            attendance.status,
+
+          checkIn:
+            attendance.checkIn,
+
+          checkOut:
+            attendance.checkOut,
+
+          workingMinutes:
+            attendance.workingMinutes,
+
+          markedBy:
+            req.user._id
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Mark attendance activity-log error:",
+        activityError
+      );
+    }
 
     return res.status(200).json({
       message:
         "Attendance marked successfully",
+
       attendance
     });
   } catch (error) {
@@ -698,6 +899,45 @@ const markAttendance = async (
       "Mark attendance error:",
       error
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Duplicate Attendance
+    |--------------------------------------------------------------------------
+    */
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message:
+          "Attendance already exists for this employee and date"
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mongoose Validation Error
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      error.name ===
+      "ValidationError"
+    ) {
+      const validationMessage =
+        Object.values(
+          error.errors
+        )
+          .map(
+            (item) =>
+              item.message
+          )
+          .join(", ");
+
+      return res.status(400).json({
+        message:
+          validationMessage
+      });
+    }
 
     return res.status(500).json({
       message:
@@ -712,14 +952,28 @@ const updateAttendance = async (
   try {
     const { id } = req.params;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Attendance ID
+    |--------------------------------------------------------------------------
+    */
+
     if (
-      !mongoose.Types.ObjectId.isValid(id)
+      !mongoose.Types.ObjectId.isValid(
+        id
+      )
     ) {
       return res.status(400).json({
         message:
           "Invalid attendance ID"
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Find Attendance Record
+    |--------------------------------------------------------------------------
+    */
 
     const attendance =
       await Attendance.findById(id);
@@ -731,13 +985,27 @@ const updateAttendance = async (
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Store Previous Data for Activity Log
+    |--------------------------------------------------------------------------
+    */
+
     const previousData = {
-      status: attendance.status,
-      checkIn: attendance.checkIn,
-      checkOut: attendance.checkOut,
+      status:
+        attendance.status,
+
+      checkIn:
+        attendance.checkIn,
+
+      checkOut:
+        attendance.checkOut,
+
       workingMinutes:
         attendance.workingMinutes,
-      notes: attendance.notes
+
+      notes:
+        attendance.notes
     };
 
     const {
@@ -747,21 +1015,47 @@ const updateAttendance = async (
       notes
     } = req.body;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Status
+    |--------------------------------------------------------------------------
+    */
+
     if (status !== undefined) {
       attendance.status = status;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Check-In
+    |--------------------------------------------------------------------------
+    */
+
     if (checkIn !== undefined) {
-      attendance.checkIn = checkIn
-        ? new Date(checkIn)
-        : null;
+      attendance.checkIn =
+        checkIn
+          ? new Date(checkIn)
+          : null;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Check-Out
+    |--------------------------------------------------------------------------
+    */
+
     if (checkOut !== undefined) {
-      attendance.checkOut = checkOut
-        ? new Date(checkOut)
-        : null;
+      attendance.checkOut =
+        checkOut
+          ? new Date(checkOut)
+          : null;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Check-In
+    |--------------------------------------------------------------------------
+    */
 
     if (
       attendance.checkIn &&
@@ -774,6 +1068,12 @@ const updateAttendance = async (
           "Invalid check-in time"
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Check-Out
+    |--------------------------------------------------------------------------
+    */
 
     if (
       attendance.checkOut &&
@@ -799,9 +1099,22 @@ const updateAttendance = async (
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Notes
+    |--------------------------------------------------------------------------
+    */
+
     if (notes !== undefined) {
-      attendance.notes = notes;
+      attendance.notes =
+        notes?.trim() || "";
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Recalculate Working Minutes
+    |--------------------------------------------------------------------------
+    */
 
     attendance.workingMinutes =
       calculateWorkingMinutes(
@@ -814,54 +1127,35 @@ const updateAttendance = async (
 
     await attendance.save();
 
-    await createActivityLog({
-      req,
-      action:
-        "UPDATE_ATTENDANCE",
-      module: "Attendance",
-      description:
-        "Updated attendance record",
-      targetId:
-        attendance._id,
-      targetModel:
-        "Attendance",
-      metadata: {
-        employee:
-          attendance.employee,
-        date:
-          attendance.date,
-        previousData,
-        updatedData: {
-          status:
-            attendance.status,
-          checkIn:
-            attendance.checkIn,
-          checkOut:
-            attendance.checkOut,
-          workingMinutes:
-            attendance.workingMinutes,
-          notes:
-            attendance.notes
-        },
-        markedBy:
-          req.user._id
-      }
-    });
+    /*
+    |--------------------------------------------------------------------------
+    | Populate Updated Attendance
+    |--------------------------------------------------------------------------
+    */
 
     const updatedAttendance =
       await Attendance.findById(id)
         .populate({
-          path: "employee",
+          path:
+            "employee",
+
+          select:
+            "employeeId designation department employmentStatus",
+
           populate: [
             {
-              path: "user",
+              path:
+                "user",
+
               select:
                 "name email"
             },
             {
               path:
                 "department",
-              select: "name"
+
+              select:
+                "name"
             }
           ]
         })
@@ -870,9 +1164,144 @@ const updateAttendance = async (
           "name email role"
         );
 
+    /*
+    |--------------------------------------------------------------------------
+    | Get Employee User
+    |--------------------------------------------------------------------------
+    | No additional Employee query is needed because the employee and user
+    | are already populated in updatedAttendance.
+    |--------------------------------------------------------------------------
+    */
+
+    const employeeUser =
+      updatedAttendance
+        ?.employee
+        ?.user;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notify Employee
+    |--------------------------------------------------------------------------
+    */
+
+    if (employeeUser?._id) {
+      try {
+        await createNotification({
+          recipient:
+            employeeUser._id,
+
+          sender:
+            req.user._id,
+
+          title:
+            "Attendance Updated",
+
+          message:
+            `Your attendance for ${new Date(
+              updatedAttendance.date
+            ).toLocaleDateString()} has been updated to ${updatedAttendance.status}.`,
+
+          type:
+            "Attendance",
+
+          relatedId:
+            updatedAttendance._id,
+
+          relatedModel:
+            "Attendance",
+
+          targetUrl:
+            "/employee/attendance"
+        });
+      } catch (
+        notificationError
+      ) {
+        console.error(
+          "Update attendance notification error:",
+          notificationError
+        );
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createActivityLog({
+        req,
+
+        action:
+          "UPDATE_ATTENDANCE",
+
+        module:
+          "Attendance",
+
+        description:
+          `Updated attendance record for ${
+            employeeUser?.name ||
+            updatedAttendance
+              ?.employee
+              ?.employeeId ||
+            "employee"
+          }`,
+
+        targetId:
+          updatedAttendance._id,
+
+        targetModel:
+          "Attendance",
+
+        metadata: {
+          employee:
+            updatedAttendance
+              .employee?._id,
+
+          employeeId:
+            updatedAttendance
+              .employee
+              ?.employeeId,
+
+          date:
+            updatedAttendance.date,
+
+          previousData,
+
+          updatedData: {
+            status:
+              updatedAttendance.status,
+
+            checkIn:
+              updatedAttendance.checkIn,
+
+            checkOut:
+              updatedAttendance.checkOut,
+
+            workingMinutes:
+              updatedAttendance
+                .workingMinutes,
+
+            notes:
+              updatedAttendance.notes
+          },
+
+          markedBy:
+            req.user._id
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Update attendance activity-log error:",
+        activityError
+      );
+    }
+
     return res.status(200).json({
       message:
         "Attendance updated successfully",
+
       attendance:
         updatedAttendance
     });
@@ -881,6 +1310,32 @@ const updateAttendance = async (
       "Update attendance error:",
       error
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mongoose Validation Error
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      error.name ===
+      "ValidationError"
+    ) {
+      const validationMessage =
+        Object.values(
+          error.errors
+        )
+          .map(
+            (item) =>
+              item.message
+          )
+          .join(", ");
+
+      return res.status(400).json({
+        message:
+          validationMessage
+      });
+    }
 
     return res.status(500).json({
       message:

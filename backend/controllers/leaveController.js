@@ -3,23 +3,59 @@ const mongoose = require("mongoose");
 const LeaveRequest = require(
   "../models/LeaveRequest"
 );
-const Employee = require("../models/Employee");
+
+const Employee = require(
+  "../models/Employee"
+);
+
+const User = require(
+  "../models/User"
+);
 
 const calculateLeaveDays = require(
   "../utils/calculateLeaveDays"
 );
+
+const {
+  sendEmail,
+  sendBulkEmail
+} = require(
+  "../services/emailService"
+);
+
+const {
+  leaveSubmittedTemplate,
+  leaveStatusTemplate
+} = require(
+  "../utils/emailTemplates"
+);
+
+const {
+  createNotification,
+  notifyAdmins
+} = require(
+  "../services/notificationService"
+);
+
 const {
   createActivityLog
 } = require(
   "../services/activityLogService"
 );
-const findEmployeeByUser = async (userId) => {
+
+const findEmployeeByUser = async (
+  userId
+) => {
   return Employee.findOne({
     user: userId
   });
 };
 
-const applyForLeave = async (req, res) => {
+
+const applyForLeave = async (
+  req,
+  res
+) => {
   try {
     const {
       leaveType,
@@ -32,7 +68,7 @@ const applyForLeave = async (req, res) => {
       !leaveType ||
       !startDate ||
       !endDate ||
-      !reason
+      !reason?.trim()
     ) {
       return res.status(400).json({
         message:
@@ -41,7 +77,9 @@ const applyForLeave = async (req, res) => {
     }
 
     const employee =
-      await findEmployeeByUser(req.user._id);
+      await findEmployeeByUser(
+        req.user._id
+      );
 
     if (!employee) {
       return res.status(404).json({
@@ -51,7 +89,8 @@ const applyForLeave = async (req, res) => {
     }
 
     if (
-      employee.employmentStatus !== "Active"
+      employee.employmentStatus !==
+      "Active"
     ) {
       return res.status(403).json({
         message:
@@ -59,15 +98,23 @@ const applyForLeave = async (req, res) => {
       });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start =
+      new Date(startDate);
+
+    const end =
+      new Date(endDate);
 
     if (
-      Number.isNaN(start.getTime()) ||
-      Number.isNaN(end.getTime())
+      Number.isNaN(
+        start.getTime()
+      ) ||
+      Number.isNaN(
+        end.getTime()
+      )
     ) {
       return res.status(400).json({
-        message: "Invalid leave dates"
+        message:
+          "Invalid leave dates"
       });
     }
 
@@ -78,10 +125,11 @@ const applyForLeave = async (req, res) => {
       });
     }
 
-    const totalDays = calculateLeaveDays(
-      start,
-      end
-    );
+    const totalDays =
+      calculateLeaveDays(
+        start,
+        end
+      );
 
     if (totalDays < 1) {
       return res.status(400).json({
@@ -92,13 +140,20 @@ const applyForLeave = async (req, res) => {
 
     const overlappingLeave =
       await LeaveRequest.findOne({
-        employee: employee._id,
+        employee:
+          employee._id,
+
         status: {
-          $in: ["Pending", "Approved"]
+          $in: [
+            "Pending",
+            "Approved"
+          ]
         },
+
         startDate: {
           $lte: end
         },
+
         endDate: {
           $gte: start
         }
@@ -111,60 +166,230 @@ const applyForLeave = async (req, res) => {
       });
     }
 
-    const leave = await LeaveRequest.create({
-      employee: employee._id,
-      leaveType,
-      startDate: start,
-      endDate: end,
-      totalDays,
-      reason
-    });
+    const leave =
+      await LeaveRequest.create({
+        employee:
+          employee._id,
+
+        leaveType,
+
+        startDate:
+          start,
+
+        endDate:
+          end,
+
+        totalDays,
+
+        reason:
+          reason.trim()
+      });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notify Admins
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await notifyAdmins({
+        sender:
+          req.user._id,
+
+        title:
+          "New Leave Request",
+
+        message:
+          `${req.user.name || "An employee"} submitted a ${leave.leaveType} leave request.`,
+
+        type:
+          "Leave",
+
+        relatedId:
+          leave._id,
+
+        relatedModel:
+          "LeaveRequest",
+
+        targetUrl:
+          `/admin/leaves/${leave._id}`
+      });
+    } catch (
+      notificationError
+    ) {
+      console.error(
+        "Leave admin notification error:",
+        notificationError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Admins
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      const admins =
+        await User.find({
+          role: "Admin",
+          isActive: true
+        }).select("email");
+
+      const adminEmails =
+        admins
+          .map(
+            (admin) =>
+              admin.email
+          )
+          .filter(Boolean);
+
+      if (
+        adminEmails.length > 0
+      ) {
+        await sendBulkEmail({
+          recipients:
+            adminEmails,
+
+          subject:
+            "New Employee Leave Request",
+
+          html:
+            leaveSubmittedTemplate({
+              employeeName:
+                req.user.name ||
+                "Employee",
+
+              leaveType:
+                leave.leaveType,
+
+              startDate:
+                new Date(
+                  leave.startDate
+                ).toLocaleDateString(),
+
+              endDate:
+                new Date(
+                  leave.endDate
+                ).toLocaleDateString()
+            })
+        });
+      }
+    } catch (emailError) {
+      console.error(
+        "Leave-submission email error:",
+        emailError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createActivityLog({
+        req,
+
+        action:
+          "CREATE",
+
+        module:
+          "Leave",
+
+        description:
+          `Applied for ${leave.leaveType} leave`,
+
+        targetId:
+          leave._id,
+
+        targetModel:
+          "LeaveRequest",
+
+        metadata: {
+          leaveType:
+            leave.leaveType,
+
+          startDate:
+            leave.startDate,
+
+          endDate:
+            leave.endDate,
+
+          totalDays:
+            leave.totalDays,
+
+          status:
+            leave.status
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Leave activity-log error:",
+        activityError
+      );
+    }
 
     const populatedLeave =
-  await LeaveRequest.findById(
-    leave._id
-  ).populate({
-    path: "employee",
-    select:
-      "employeeId designation department",
-    populate: [
-      {
-        path: "user",
-        select: "name email"
-      },
-      {
-        path: "department",
-        select: "name"
-      }
-    ]
-  });
+      await LeaveRequest.findById(
+        leave._id
+      ).populate({
+        path: "employee",
 
-await createActivityLog({
-  req,
-  action: "CREATE",
-  module: "Leave",
-  description: `Applied for ${leave.leaveType} leave`,
-  targetId: leave._id,
-  targetModel: "LeaveRequest",
-  metadata: {
-    leaveType: leave.leaveType,
-    startDate: leave.startDate,
-    endDate: leave.endDate,
-    totalDays: leave.totalDays,
-    status: leave.status
-  }
-});
+        select:
+          "employeeId designation department",
 
-return res.status(201).json({
-  message:
-    "Leave request submitted successfully",
-  leave: populatedLeave
-});
+        populate: [
+          {
+            path:
+              "user",
+
+            select:
+              "name email"
+          },
+          {
+            path:
+              "department",
+
+            select:
+              "name"
+          }
+        ]
+      });
+
+    return res.status(201).json({
+      message:
+        "Leave request submitted successfully",
+
+      leave:
+        populatedLeave
+    });
   } catch (error) {
     console.error(
       "Apply leave error:",
       error
     );
+
+    if (
+      error.name ===
+      "ValidationError"
+    ) {
+      const validationMessage =
+        Object.values(
+          error.errors
+        )
+          .map(
+            (item) =>
+              item.message
+          )
+          .join(", ");
+
+      return res.status(400).json({
+        message:
+          validationMessage
+      });
+    }
 
     return res.status(500).json({
       message:
@@ -513,9 +738,20 @@ const updateLeaveStatus = async (
     } = req.body;
 
     if (
-      !["Approved", "Rejected"].includes(
-        status
-      )
+      !mongoose.Types.ObjectId
+        .isValid(id)
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid leave ID"
+      });
+    }
+
+    if (
+      ![
+        "Approved",
+        "Rejected"
+      ].includes(status)
     ) {
       return res.status(400).json({
         message:
@@ -523,13 +759,11 @@ const updateLeaveStatus = async (
       });
     }
 
-    if (
-      !mongoose.Types.ObjectId.isValid(id)
-    ) {
-      return res.status(400).json({
-        message: "Invalid leave ID"
-      });
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Find Leave First
+    |--------------------------------------------------------------------------
+    */
 
     const leave =
       await LeaveRequest.findById(id);
@@ -541,63 +775,230 @@ const updateLeaveStatus = async (
       });
     }
 
-    if (leave.status !== "Pending") {
+    if (
+      leave.status !==
+      "Pending"
+    ) {
       return res.status(400).json({
         message:
           "Only pending leave requests can be reviewed"
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update Leave
+    |--------------------------------------------------------------------------
+    */
+
     leave.status = status;
-    leave.reviewedBy = req.user._id;
-    leave.reviewedAt = new Date();
+    leave.reviewedBy =
+      req.user._id;
+    leave.reviewedAt =
+      new Date();
     leave.reviewComment =
       reviewComment.trim();
 
     await leave.save();
 
-    const updatedLeave =
-  await LeaveRequest.findById(id)
-    .populate({
-      path: "employee",
-      populate: [
-        {
-          path: "user",
-          select: "name email"
-        },
-        {
-          path: "department",
-          select: "name"
+    /*
+    |--------------------------------------------------------------------------
+    | Find Employee and User
+    |--------------------------------------------------------------------------
+    */
+
+    const employeeRecord =
+      await Employee.findById(
+        leave.employee
+      ).populate(
+        "user",
+        "name email"
+      );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employee Notification
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      employeeRecord
+        ?.user?._id
+    ) {
+      try {
+        await createNotification({
+          recipient:
+            employeeRecord
+              .user._id,
+
+          sender:
+            req.user._id,
+
+          title:
+            status ===
+            "Approved"
+              ? "Leave Approved"
+              : "Leave Rejected",
+
+          message:
+            status ===
+            "Approved"
+              ? `Your ${leave.leaveType} leave request has been approved.`
+              : `Your ${leave.leaveType} leave request has been rejected.${
+                  reviewComment
+                    ? ` Reason: ${reviewComment.trim()}`
+                    : ""
+                }`,
+
+          type:
+            "Leave",
+
+          relatedId:
+            leave._id,
+
+          relatedModel:
+            "LeaveRequest",
+
+          targetUrl:
+            `/employee/leaves/${leave._id}`
+        });
+      } catch (
+        notificationError
+      ) {
+        console.error(
+          "Leave status notification error:",
+          notificationError
+        );
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employee Email
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      employeeRecord
+        ?.user?.email
+    ) {
+      try {
+        await sendEmail({
+          to:
+            employeeRecord
+              .user.email,
+
+          subject:
+            `Leave Request ${status}`,
+
+          html:
+            leaveStatusTemplate({
+              employeeName:
+                employeeRecord
+                  .user.name,
+
+              leaveType:
+                leave.leaveType,
+
+              status,
+
+              reviewComment:
+                reviewComment.trim()
+            })
+        });
+      } catch (emailError) {
+        console.error(
+          "Leave-status email error:",
+          emailError
+        );
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createActivityLog({
+        req,
+
+        action:
+          status ===
+          "Approved"
+            ? "APPROVE"
+            : "REJECT",
+
+        module:
+          "Leave",
+
+        description:
+          `${status} leave request`,
+
+        targetId:
+          leave._id,
+
+        targetModel:
+          "LeaveRequest",
+
+        metadata: {
+          leaveType:
+            leave.leaveType,
+
+          employee:
+            leave.employee,
+
+          reviewComment:
+            reviewComment.trim(),
+
+          status
         }
-      ]
-    })
-    .populate(
-      "reviewedBy",
-      "name email role"
-    );
+      });
+    } catch (activityError) {
+      console.error(
+        "Leave review activity-log error:",
+        activityError
+      );
+    }
 
-await createActivityLog({
-  req,
-  action:
-    status === "Approved"
-      ? "APPROVE"
-      : "REJECT",
-  module: "Leave",
-  description: `${status} leave request`,
-  targetId: leave._id,
-  targetModel: "LeaveRequest",
-  metadata: {
-    leaveType: leave.leaveType,
-    employee: leave.employee,
-    reviewComment,
-    status
-  }
-});
+    const updatedLeave =
+      await LeaveRequest.findById(
+        id
+      )
+        .populate({
+          path:
+            "employee",
 
-return res.status(200).json({
-  message: `Leave request ${status.toLowerCase()} successfully`,
-  leave: updatedLeave
-});
+          populate: [
+            {
+              path:
+                "user",
+
+              select:
+                "name email"
+            },
+            {
+              path:
+                "department",
+
+              select:
+                "name"
+            }
+          ]
+        })
+        .populate(
+          "reviewedBy",
+          "name email role"
+        );
+
+    return res.status(200).json({
+      message:
+        `Leave request ${status.toLowerCase()} successfully`,
+
+      leave:
+        updatedLeave
+    });
   } catch (error) {
     console.error(
       "Update leave status error:",
@@ -611,20 +1012,27 @@ return res.status(200).json({
   }
 };
 
-const cancelLeave = async (req, res) => {
+const cancelLeave = async (
+  req,
+  res
+) => {
   try {
     const { id } = req.params;
 
     if (
-      !mongoose.Types.ObjectId.isValid(id)
+      !mongoose.Types.ObjectId
+        .isValid(id)
     ) {
       return res.status(400).json({
-        message: "Invalid leave ID"
+        message:
+          "Invalid leave ID"
       });
     }
 
     const employee =
-      await findEmployeeByUser(req.user._id);
+      await findEmployeeByUser(
+        req.user._id
+      );
 
     if (!employee) {
       return res.status(404).json({
@@ -636,7 +1044,8 @@ const cancelLeave = async (req, res) => {
     const leave =
       await LeaveRequest.findOne({
         _id: id,
-        employee: employee._id
+        employee:
+          employee._id
       });
 
     if (!leave) {
@@ -646,40 +1055,114 @@ const cancelLeave = async (req, res) => {
       });
     }
 
-    if (leave.status !== "Pending") {
+    if (
+      leave.status !==
+      "Pending"
+    ) {
       return res.status(400).json({
         message:
           "Only pending leave requests can be cancelled"
       });
     }
 
-    leave.status = "Cancelled";
-    leave.cancelledAt = new Date();
+    leave.status =
+      "Cancelled";
+
+    leave.cancelledAt =
+      new Date();
 
     await leave.save();
 
-    await leave.save();
+    /*
+    |--------------------------------------------------------------------------
+    | Notify Admins
+    |--------------------------------------------------------------------------
+    */
 
-await createActivityLog({
-  req,
-  action: "CANCEL",
-  module: "Leave",
-  description: "Cancelled leave request",
-  targetId: leave._id,
-  targetModel: "LeaveRequest",
-  metadata: {
-    leaveType: leave.leaveType,
-    startDate: leave.startDate,
-    endDate: leave.endDate,
-    totalDays: leave.totalDays
-  }
-});
+    try {
+      await notifyAdmins({
+        sender:
+          req.user._id,
 
-return res.status(200).json({
-  message:
-    "Leave request cancelled successfully",
-  leave
-});
+        title:
+          "Leave Request Cancelled",
+
+        message:
+          `${req.user.name || "An employee"} cancelled a ${leave.leaveType} leave request.`,
+
+        type:
+          "Leave",
+
+        relatedId:
+          leave._id,
+
+        relatedModel:
+          "LeaveRequest",
+
+        targetUrl:
+          `/admin/leaves/${leave._id}`
+      });
+    } catch (
+      notificationError
+    ) {
+      console.error(
+        "Leave cancellation notification error:",
+        notificationError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+      await createActivityLog({
+        req,
+
+        action:
+          "CANCEL",
+
+        module:
+          "Leave",
+
+        description:
+          "Cancelled leave request",
+
+        targetId:
+          leave._id,
+
+        targetModel:
+          "LeaveRequest",
+
+        metadata: {
+          leaveType:
+            leave.leaveType,
+
+          startDate:
+            leave.startDate,
+
+          endDate:
+            leave.endDate,
+
+          totalDays:
+            leave.totalDays
+        }
+      });
+    } catch (activityError) {
+      console.error(
+        "Leave cancellation activity-log error:",
+        activityError
+      );
+    }
+
+    return res.status(200).json({
+      message:
+        "Leave request cancelled successfully",
+
+      leave
+    });
   } catch (error) {
     console.error(
       "Cancel leave error:",
