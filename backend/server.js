@@ -5,7 +5,8 @@ const path = require("path");
 require("dotenv").config();
 
 const connectDatabase = require("./config/db");
-
+const userRoutes =
+require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 const departmentRoutes = require(
   "./routes/departmentRoutes"
@@ -74,6 +75,10 @@ app.use(
 app.use(
   "/api/employees",
   employeeRoutes
+);
+app.use(
+    "/api/users",
+    userRoutes
 );
 
 app.use(

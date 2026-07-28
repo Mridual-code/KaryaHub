@@ -188,18 +188,20 @@ const checkOut = async (req, res) => {
 
     attendance.checkOut = now;
 
-    attendance.workingMinutes =
-  calculateWorkingMinutes(
+    attendance.workingMinutes = calculateWorkingMinutes(
     attendance.checkIn,
     now
-  );
+);
 
-if (attendance.workingHours < 4) {
-  attendance.status = "Half Day";
+const workingHours = attendance.workingMinutes / 60;
+
+if (workingHours < 4) {
+    attendance.status = "Half Day";
 } else {
-  attendance.status = "Present";
+    attendance.status = "Present";
 }
-    await attendance.save();
+
+await attendance.save();
 await createActivityLog({
   req,
   action: "CHECK_OUT",
@@ -1030,13 +1032,32 @@ const updateAttendance = async (
     | Update Check-In
     |--------------------------------------------------------------------------
     */
+     if (checkIn !== undefined) {
 
-    if (checkIn !== undefined) {
-      attendance.checkIn =
-        checkIn
-          ? new Date(checkIn)
-          : null;
-    }
+  if (checkIn) {
+
+    const date = new Date(attendance.date);
+
+    const [hours, minutes] =
+      checkIn.split(":");
+
+    date.setHours(
+      parseInt(hours),
+      parseInt(minutes),
+      0,
+      0
+    );
+
+    attendance.checkIn = date;
+
+  } else {
+
+    attendance.checkIn = null;
+
+  }
+
+}
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -1045,11 +1066,30 @@ const updateAttendance = async (
     */
 
     if (checkOut !== undefined) {
-      attendance.checkOut =
-        checkOut
-          ? new Date(checkOut)
-          : null;
-    }
+
+  if (checkOut) {
+
+    const date = new Date(attendance.date);
+
+    const [hours, minutes] =
+      checkOut.split(":");
+
+    date.setHours(
+      parseInt(hours),
+      parseInt(minutes),
+      0,
+      0
+    );
+
+    attendance.checkOut = date;
+
+  } else {
+
+    attendance.checkOut = null;
+
+  }
+
+}
 
     /*
     |--------------------------------------------------------------------------

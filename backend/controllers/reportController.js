@@ -520,6 +520,33 @@ const exportLeavesCsv = async (
     });
   }
 };
+const getEmployeeReports = async(req,res)=>{
+    try {
+
+        const employees =
+            await Employee.find()
+            .populate("user","name email role")
+            .populate("department","name")
+            .sort({
+                createdAt:-1
+            });
+
+
+        res.json({
+            success:true,
+            data:employees
+        });
+
+
+    } catch(error){
+
+        res.status(500).json({
+            success:false,
+            message:"Failed to fetch employee reports"
+        });
+
+    }
+};
 
 module.exports = {
   exportEmployeesCsv,
