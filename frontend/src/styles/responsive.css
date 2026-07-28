@@ -1,0 +1,36 @@
+@media (
+  max-width: 767px
+) {
+  .page {
+    padding: 16px;
+  }
+
+  .error-card {
+    padding: 28px 20px;
+  }
+}
+
+@media (
+  min-width: 768px
+) {
+  .page {
+    padding: 24px;
+  }
+}
+
+@media (
+  min-width: 1024px
+) {
+  .page {
+    padding: 32px;
+  }
+}
+
+@media (
+  min-width: 1440px
+) {
+  .page {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
