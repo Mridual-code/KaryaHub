@@ -2,6 +2,10 @@ function NotificationToolbar({
 
     unread,
 
+    search,
+
+    onSearch,
+
     onReadAll,
 
     onClear,
@@ -10,7 +14,7 @@ function NotificationToolbar({
 
     return (
 
-        <div className="page-header">
+        <div className="page-header notification-toolbar">
 
             <div>
 
@@ -19,20 +23,25 @@ function NotificationToolbar({
                 </h1>
 
                 <p>
-
-                    {unread} unread
-                    notifications
-
+                    {unread} unread notification
+                    {unread !== 1 ? "s" : ""}
                 </p>
 
             </div>
 
-            <div
-                style={{
-                    display:"flex",
-                    gap:"10px",
-                }}
-            >
+            <div className="notification-toolbar-actions">
+
+                <input
+                    type="text"
+                    placeholder="Search notifications..."
+                    value={search}
+                    onChange={(e) =>
+                        onSearch(
+                            e.target.value
+                        )
+                    }
+                    className="notification-search"
+                />
 
                 <button
                     className="primary-btn"
@@ -42,9 +51,10 @@ function NotificationToolbar({
                 </button>
 
                 <button
+                    className="danger-btn"
                     onClick={onClear}
                 >
-                    Clear
+                    Clear All
                 </button>
 
             </div>

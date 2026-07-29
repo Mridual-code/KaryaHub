@@ -8,10 +8,10 @@ import {
   markAllAsRead,
   markAsRead,
 } from "../../services/notificationService";
-
+import "../../styles/notifications.css";
 import NotificationToolbar from "../../components/notifications/NotificationToolbar";
 import NotificationList from "../../components/notifications/NotificationList";
-
+import NotificationFilters from "../../components/notifications/NotificationFilters";
 function Notifications() {
 
     const [notifications, setNotifications] =
@@ -19,41 +19,72 @@ function Notifications() {
 
     const [unread, setUnread] =
         useState(0);
+        const [loading, setLoading] =
+    useState(true);
+
+const [search, setSearch] =
+    useState("");
+
+const [filter, setFilter] =
+    useState("all");
 
     const loadNotifications =
-        async () => {
+    async () => {
 
-            try {
+        try {
 
-                const [
-                    notificationData,
-                    unreadData,
-                ] = await Promise.all([
-                    getNotifications(),
-                    getUnreadCount(),
-                ]);
+            setLoading(true);
 
-                setNotifications(
-                    notificationData.notifications || []
-                );
+            const params = {};
 
-                setUnread(
-                    unreadData.unreadCount || 0
-                );
-
-            } catch (err) {
-
-                console.log(err);
-
+            if (search) {
+                params.search = search;
             }
 
-        };
+            if (filter === "read") {
+                params.isRead = true;
+            }
+
+            if (filter === "unread") {
+                params.isRead = false;
+            }
+
+            const [
+                notificationData,
+                unreadData,
+            ] = await Promise.all([
+
+                getNotifications(params),
+
+                getUnreadCount(),
+
+            ]);
+
+            setNotifications(
+                notificationData.notifications || []
+            );
+
+            setUnread(
+                unreadData.unreadCount || 0
+            );
+
+        } catch (err) {
+
+            console.log(err);
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
 
     useEffect(() => {
 
         loadNotifications();
 
-    }, []);
+    }, [search, filter]);
 
     const handleRead =
         async (notification) => {
@@ -129,38 +160,47 @@ function Notifications() {
 
     return (
 
-        <div>
+        <div className="notifications-page">
 
             <NotificationToolbar
 
-                unread={unread}
+    unread={unread}
 
-                onReadAll={
-                    handleReadAll
-                }
+    search={search}
 
-                onClear={
-                    handleClear
-                }
+    onSearch={setSearch}
 
-            />
+    onReadAll={
+        handleReadAll
+    }
 
-            <NotificationList
+    onClear={
+        handleClear
+    }
 
-                notifications={
-                    notifications
-                }
+/>
+<NotificationFilters
+    filter={filter}
+    onFilterChange={setFilter}
+/>
 
-                onRead={
-                    handleRead
-                }
+           <NotificationList
 
-                onDelete={
-                    handleDelete
-                }
+    loading={loading}
 
-            />
+    notifications={
+        notifications
+    }
 
+    onRead={
+        handleRead
+    }
+
+    onDelete={
+        handleDelete
+    }
+
+/>
         </div>
 
     );

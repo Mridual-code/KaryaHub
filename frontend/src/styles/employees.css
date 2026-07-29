@@ -1,0 +1,1304 @@
+/* ==========================================================
+   EMPLOYEE PAGE
+========================================================== */
+
+.employee-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px;
+}
+
+.employee-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ==========================================================
+   PAGE HEADER
+========================================================== */
+
+.employee-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 26px 30px;
+  box-shadow: var(--shadow-sm);
+}
+
+.employee-header-left h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.employee-header-left p {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: .95rem;
+}
+
+.employee-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ==========================================================
+   TOOLBAR
+========================================================== */
+
+.employee-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  padding: 20px 24px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.employee-toolbar-left,
+.employee-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ==========================================================
+   SEARCH
+========================================================== */
+
+.employee-search {
+  position: relative;
+  min-width: 320px;
+}
+
+.employee-search input,
+.employee-toolbar input[type="text"] {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  padding: 0 16px;
+  font-size: .95rem;
+  transition: .25s;
+}
+
+.employee-search input:focus,
+.employee-toolbar input[type="text"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+}
+
+/* ==========================================================
+   FILTERS
+========================================================== */
+
+.employee-filters {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  padding: 18px 24px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.employee-filters select {
+  min-width: 180px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 14px;
+  background: var(--background);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: .25s;
+}
+
+.employee-filters select:hover {
+  border-color: var(--primary);
+}
+
+.employee-filters select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+}
+
+/* ==========================================================
+   BUTTONS
+========================================================== */
+
+.employee-toolbar button,
+.employee-filters button,
+.primary-btn {
+  height: 46px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .25s ease;
+}
+
+.employee-toolbar button:hover,
+.employee-filters button:hover,
+.primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(37,99,235,.25);
+}
+
+.secondary-btn {
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: .25s;
+}
+
+.secondary-btn:hover {
+  background: var(--background);
+}
+
+/* ==========================================================
+   CARD WRAPPER
+========================================================== */
+
+.employee-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+/* ==========================================================
+   EMPLOYEE TABLE
+========================================================== */
+
+.employee-table-wrapper,
+.table-card {
+  background: var(--surface);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-table thead {
+  background: var(--background);
+}
+
+.dashboard-table th {
+  padding: 18px 20px;
+  text-align: left;
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.dashboard-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: .94rem;
+  vertical-align: middle;
+  transition: .25s;
+}
+
+.dashboard-table tbody tr {
+  transition: .25s ease;
+}
+
+.dashboard-table tbody tr:hover {
+  background: rgba(37,99,235,.05);
+}
+
+.dashboard-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ==========================================================
+   EMPLOYEE CELL
+========================================================== */
+
+.employee-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.employee-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.employee-info strong {
+  color: var(--text-primary);
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.employee-info span {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: .82rem;
+}
+
+/* ==========================================================
+   AVATAR
+========================================================== */
+
+.employee-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--primary),
+    #4f8cff
+  );
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 8px 18px rgba(37,99,235,.18);
+}
+
+/* ==========================================================
+   EMPLOYEE ID
+========================================================== */
+
+.employee-id {
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: .04em;
+}
+
+/* ==========================================================
+   DEPARTMENT BADGE
+========================================================== */
+
+.department-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(37,99,235,.10);
+  color: var(--primary);
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+/* ==========================================================
+   STATUS BADGES
+========================================================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 600;
+  min-width: 95px;
+}
+
+.status-active {
+  background: rgba(34,197,94,.12);
+  color: #16a34a;
+}
+
+.status-inactive {
+  background: rgba(239,68,68,.12);
+  color: #dc2626;
+}
+
+.status-onleave {
+  background: rgba(245,158,11,.12);
+  color: #d97706;
+}
+
+.status-probation {
+  background: rgba(99,102,241,.12);
+  color: #4f46e5;
+}
+
+/* ==========================================================
+   ACTION BUTTONS
+========================================================== */
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-actions button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: .25s;
+}
+
+.table-actions button:hover {
+  transform: translateY(-2px);
+}
+
+/* View */
+
+.table-actions .view-btn:hover {
+  background: rgba(59,130,246,.15);
+  color: #2563eb;
+}
+
+/* Edit */
+
+.table-actions .edit-btn:hover {
+  background: rgba(16,185,129,.15);
+  color: #059669;
+}
+
+/* Delete */
+
+.table-actions .delete-btn:hover {
+  background: rgba(239,68,68,.15);
+  color: #dc2626;
+}
+
+/* ==========================================================
+   EMPTY STATE
+========================================================== */
+
+.empty-table {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-table h3 {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.empty-table p {
+  font-size: .9rem;
+}
+
+/* ==========================================================
+   TABLE SCROLL
+========================================================== */
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.15);
+  border-radius: 20px;
+}
+
+/* ==========================================================
+   ROW ANIMATION
+========================================================== */
+
+.dashboard-table tbody tr {
+  animation: fadeRow .35s ease;
+}
+
+@keyframes fadeRow {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* ==========================================================
+   EMPLOYEE PROFILE DRAWER
+========================================================== */
+
+.profile-drawer,
+.employee-profile-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 430px;
+  max-width: 100%;
+  height: 100vh;
+  background: var(--surface);
+  box-shadow: -12px 0 40px rgba(0,0,0,.15);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 1200;
+  animation: drawerSlide .35s ease;
+}
+
+/* ==========================================================
+   DRAWER HEADER
+========================================================== */
+
+.drawer-header {
+  padding: 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawer-header h2,
+.drawer-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.3rem;
+}
+
+.drawer-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: .25s;
+}
+
+.drawer-close:hover {
+  background: rgba(239,68,68,.12);
+  color: #dc2626;
+}
+
+/* ==========================================================
+   PROFILE SECTION
+========================================================== */
+
+.profile-section {
+  padding: 32px 28px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-avatar {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: linear-gradient(
+      135deg,
+      var(--primary),
+      #4f8cff
+  );
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  font-weight: 700;
+  box-shadow: 0 12px 28px rgba(37,99,235,.25);
+}
+
+.profile-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-email {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: .92rem;
+}
+
+.profile-role {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 7px 18px;
+  border-radius: 999px;
+  background: rgba(37,99,235,.10);
+  color: var(--primary);
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+/* ==========================================================
+   INFO SECTION
+========================================================== */
+
+.drawer-body {
+  flex: 1;
+  padding: 28px;
+}
+
+.info-card {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 20px;
+}
+
+.info-card h4 {
+  margin: 0 0 18px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ==========================================================
+   INFO GRID
+========================================================== */
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.info-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-label {
+  color: var(--text-secondary);
+  font-size: .86rem;
+  font-weight: 500;
+}
+
+.info-value {
+  color: var(--text-primary);
+  font-size: .9rem;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ==========================================================
+   STATUS CHIP
+========================================================== */
+
+.drawer-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+/* ==========================================================
+   DRAWER FOOTER
+========================================================== */
+
+.drawer-footer {
+  padding: 22px 28px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ==========================================================
+   CUSTOM SCROLLBAR
+========================================================== */
+
+.profile-drawer::-webkit-scrollbar,
+.employee-profile-drawer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.profile-drawer::-webkit-scrollbar-thumb,
+.employee-profile-drawer::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.18);
+  border-radius: 20px;
+}
+
+/* ==========================================================
+   DRAWER ANIMATION
+========================================================== */
+
+@keyframes drawerSlide {
+
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+}
+/* ==========================================================
+   EMPLOYEE MODAL
+========================================================== */
+
+.employee-modal-overlay,
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  z-index: 1500;
+  animation: fadeOverlay .25s ease;
+}
+
+.employee-modal,
+.modal-content {
+  width: min(980px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: 22px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.18);
+  animation: modalScale .3s ease;
+}
+
+/* ==========================================================
+   MODAL HEADER
+========================================================== */
+
+.modal-header {
+  padding: 24px 30px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2,
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.35rem;
+}
+
+.modal-close {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: var(--background);
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: .25s;
+}
+
+.modal-close:hover {
+  background: rgba(239,68,68,.12);
+  color: #dc2626;
+}
+
+/* ==========================================================
+   MODAL BODY
+========================================================== */
+
+.modal-body {
+  padding: 30px;
+}
+
+.employee-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ==========================================================
+   FORM SECTION
+========================================================== */
+
+.form-section {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.form-section h4 {
+  margin: 0 0 20px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ==========================================================
+   FORM GRID
+========================================================== */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ==========================================================
+   LABELS
+========================================================== */
+
+.form-group label {
+  margin-bottom: 8px;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ==========================================================
+   INPUTS
+========================================================== */
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font-size: .95rem;
+  transition: .25s;
+}
+
+.form-group input,
+.form-group select {
+  height: 46px;
+}
+
+.form-group textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+/* ==========================================================
+   INPUT STATES
+========================================================== */
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ==========================================================
+   REQUIRED
+========================================================== */
+
+.required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* ==========================================================
+   MODAL FOOTER
+========================================================== */
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 22px 30px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-footer button {
+  min-width: 120px;
+}
+
+/* ==========================================================
+   BUTTONS
+========================================================== */
+
+.save-btn {
+  height: 46px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(37,99,235,.25);
+}
+
+.cancel-btn {
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: .25s;
+}
+
+.cancel-btn:hover {
+  background: var(--background);
+}
+
+/* ==========================================================
+   CUSTOM SCROLLBAR
+========================================================== */
+
+.employee-modal::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.employee-modal::-webkit-scrollbar-thumb,
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.18);
+  border-radius: 20px;
+}
+
+/* ==========================================================
+   ANIMATIONS
+========================================================== */
+
+@keyframes fadeOverlay {
+
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+
+}
+
+@keyframes modalScale {
+
+  from {
+    opacity: 0;
+    transform: scale(.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+}
+/* ==========================================================
+   HOVER EFFECTS
+========================================================== */
+
+.employee-card,
+.table-card,
+.employee-toolbar,
+.employee-filters,
+.info-card,
+.form-section {
+  transition: all .25s ease;
+}
+
+.employee-card:hover,
+.info-card:hover,
+.form-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================
+   BUTTON ANIMATIONS
+========================================================== */
+
+.primary-btn,
+.save-btn,
+.employee-toolbar button,
+.employee-filters button {
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-btn::after,
+.save-btn::after,
+.employee-toolbar button::after,
+.employee-filters button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,.15);
+  opacity: 0;
+  transition: .3s;
+}
+
+.primary-btn:hover::after,
+.save-btn:hover::after,
+.employee-toolbar button:hover::after,
+.employee-filters button:hover::after {
+  opacity: 1;
+}
+
+/* ==========================================================
+   TABLE EFFECTS
+========================================================== */
+
+.dashboard-table tbody tr {
+  transition:
+      background .25s,
+      transform .2s;
+}
+
+.dashboard-table tbody tr:hover {
+  transform: scale(1.003);
+}
+
+.dashboard-table td,
+.dashboard-table th {
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   INPUT ANIMATIONS
+========================================================== */
+
+input,
+select,
+textarea,
+button {
+  transition:
+      background .25s,
+      color .25s,
+      border .25s,
+      box-shadow .25s,
+      transform .25s;
+}
+
+/* ==========================================================
+   DRAWER
+========================================================== */
+
+.drawer-body,
+.modal-body {
+  scroll-behavior: smooth;
+}
+
+/* ==========================================================
+   FOCUS
+========================================================== */
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* ==========================================================
+   TABLET
+========================================================== */
+
+@media (max-width: 992px) {
+
+  .employee-page {
+    padding: 20px;
+  }
+
+  .employee-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .employee-toolbar-left,
+  .employee-toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .employee-search {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .employee-filters {
+    flex-wrap: wrap;
+  }
+
+  .employee-filters select {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-drawer,
+  .employee-profile-drawer {
+    width: 100%;
+  }
+
+}
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width:768px){
+
+.employee-page{
+padding:16px;
+gap:18px;
+}
+
+.employee-header{
+flex-direction:column;
+align-items:flex-start;
+padding:22px;
+}
+
+.employee-toolbar{
+padding:18px;
+}
+
+.employee-toolbar-left,
+.employee-toolbar-right{
+flex-direction:column;
+align-items:stretch;
+gap:14px;
+}
+
+.employee-filters{
+padding:18px;
+}
+
+.employee-filters select{
+width:100%;
+}
+
+.dashboard-table{
+min-width:900px;
+}
+
+.table-responsive{
+overflow-x:auto;
+}
+
+.modal-header,
+.modal-body,
+.modal-footer{
+padding:18px;
+}
+
+.info-card,
+.form-section{
+padding:18px;
+}
+
+.profile-avatar{
+width:78px;
+height:78px;
+font-size:1.6rem;
+}
+
+}
+
+/* ==========================================================
+   SMALL MOBILE
+========================================================== */
+
+@media (max-width:480px){
+
+.employee-header-left h2{
+font-size:1.35rem;
+}
+
+.employee-header-left p{
+font-size:.85rem;
+}
+
+.employee-search input{
+font-size:.9rem;
+}
+
+.primary-btn,
+.save-btn,
+.cancel-btn{
+width:100%;
+}
+
+.modal-footer{
+flex-direction:column-reverse;
+}
+
+.modal-footer button{
+width:100%;
+}
+
+.drawer-header{
+padding:18px;
+}
+
+.drawer-body{
+padding:18px;
+}
+
+.profile-section{
+padding:24px 18px;
+}
+
+}
+
+/* ====.dark======================================================
+   DARK MODE
+========================================================== */
+
+ .employee-avatar,
+[data-theme="dark"] .employee-avatar{
+box-shadow:0 8px 24px rgba(37,99,235,.45);
+}
+
+.dark .dashboard-table tbody tr:hover,
+[data-theme="dark"] .dashboard-table tbody tr:hover{
+background:rgba(255,255,255,.04);
+}
+
+.dark .info-card,
+.dark .form-section,
+[data-theme="dark"] .info-card,
+[data-theme="dark"] .form-section{
+border-color:rgba(255,255,255,.08);
+}
+
+/* ==========================================================
+   UTILITIES
+========================================================== */
+
+.text-center{
+text-align:center;
+}
+
+.w-100{
+width:100%;
+}
+
+.mt-1{
+margin-top:8px;
+}
+
+.mt-2{
+margin-top:16px;
+}
+
+.mt-3{
+margin-top:24px;
+}
+
+.mb-1{
+margin-bottom:8px;
+}
+
+.mb-2{
+margin-bottom:16px;
+}
+
+.mb-3{
+margin-bottom:24px;
+}
+
+.d-flex{
+display:flex;
+}
+
+.align-center{
+align-items:center;
+}
+
+.justify-between{
+justify-content:space-between;
+}
+
+.gap-1{
+gap:8px;
+}
+
+.gap-2{
+gap:16px;
+}
+
+.gap-3{
+gap:24px;
+}
+
+/* ==========================================================
+   END
+========================================================== */

@@ -4,8 +4,7 @@ import "react-calendar/dist/Calendar.css";
 
 import attendanceService from "../../services/attendanceService";
 
-function AttendanceCalendar() {
-  const [value, setValue] = useState(new Date());
+function AttendanceCalendar({ employeeId = null }) {  const [value, setValue] = useState(new Date());
 
   const [calendar, setCalendar] =
     useState({});
@@ -20,11 +19,16 @@ function AttendanceCalendar() {
       const year =
         date.getFullYear();
 
-      const data =
-        await attendanceService.getMyAttendanceCalendar(
-          month,
-          year
-        );
+      const data = employeeId
+  ? await attendanceService.getEmployeeAttendanceCalendar(
+      employeeId,
+      month,
+      year
+    )
+  : await attendanceService.getMyAttendanceCalendar(
+      month,
+      year
+    );
 
       setCalendar(
         data.calendar || {}
@@ -107,11 +111,7 @@ function AttendanceCalendar() {
   return (
     <div className="attendance-calendar-card">
 
-      <div className="attendance-card-header">
-        <h3>
-          Attendance Calendar
-        </h3>
-      </div>
+      
 
       <Calendar
         value={value}

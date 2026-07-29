@@ -8,7 +8,34 @@ function NotificationCard({
     notification,
     onRead,
     onDelete,
-}) {
+})   { 
+    const formatTimeAgo = (date) => {
+
+    const seconds = Math.floor(
+        (Date.now() - new Date(date)) / 1000
+    );
+
+    if (seconds < 60)
+        return "Just now";
+
+    const minutes = Math.floor(seconds / 60);
+
+    if (minutes < 60)
+        return `${minutes} min ago`;
+
+    const hours = Math.floor(minutes / 60);
+
+    if (hours < 24)
+        return `${hours} hr ago`;
+
+    const days = Math.floor(hours / 24);
+
+    if (days === 1)
+        return "Yesterday";
+
+    return `${days} days ago`;
+
+};
     return (
         <div
             className={`notification-card ${
@@ -34,6 +61,9 @@ function NotificationCard({
                 >
                     {notification.type}
                 </span>
+                 {!notification.isRead && (
+        <span className="notification-dot" />
+    )}
 
             </div>
 
@@ -43,19 +73,22 @@ function NotificationCard({
 
             {notification.sender && (
 
-                <small>
-                    From:
-                    {" "}
-                    {notification.sender.name}
-                </small>
+               <small className="notification-sender">
 
+    From:
+    {" "}
+    <strong>
+        {notification.sender.name}
+    </strong>
+
+</small>
             )}
 
-            <small>
-                {new Date(
-                    notification.createdAt
-                ).toLocaleString()}
-            </small>
+            <small className="notification-time">
+    {formatTimeAgo(
+        notification.createdAt
+    )}
+</small>
 
             <div className="notification-actions">
 
@@ -63,9 +96,13 @@ function NotificationCard({
 
                     <button
                         className="primary-btn"
-                        onClick={() =>
-                            onRead(notification._id)
-                        }
+                        onClick={(e) => {
+
+    e.stopPropagation();
+
+    onRead(notification._id);
+
+}}
                     >
                         <FaCheck />
                     </button>
@@ -74,9 +111,13 @@ function NotificationCard({
 
                 <button
                     className="danger-btn"
-                    onClick={() =>
-                        onDelete(notification._id)
-                    }
+                    onClick={(e) => {
+
+    e.stopPropagation();
+
+    onDelete(notification._id);
+
+}}
                 >
                     <FaTrash />
                 </button>

@@ -83,14 +83,15 @@ function Attendance() {
       <h2>My Attendance</h2>
 
       <TodayAttendanceCard
-        attendance={todayAttendance}
-      />
+    today={todayAttendance}
+/>
 
-      <CheckInOutCard
-        attendance={todayAttendance}
-        onCheckIn={handleCheckIn}
-        onCheckOut={handleCheckOut}
-      />
+<CheckInOutCard
+    today={todayAttendance}
+    onCheckIn={handleCheckIn}
+    onCheckOut={handleCheckOut}
+    loading={loading}
+/>
 
       <AttendanceCalendar />
 

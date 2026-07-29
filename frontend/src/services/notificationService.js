@@ -1,12 +1,17 @@
 import API from "../api/axios";
 
 // Get all notifications
-export const getNotifications = async () => {
+export const getNotifications = async (params = {}) => {
+
     const response = await API.get(
-        "/notifications"
+        "/notifications",
+        {
+            params
+        }
     );
 
     return response.data;
+
 };
 
 // Get unread notification count

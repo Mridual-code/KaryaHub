@@ -4,7 +4,9 @@ import {
   FaChevronDown,
   FaSearch,
   FaUser,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaSun,
+  FaMoon
 } from "react-icons/fa";
 
 import {
@@ -19,10 +21,13 @@ import {
 } from "react";
 
 import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../context/ThemeContext";
 
 import {
   getNotifications,
-  getUnreadCount
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead
 } from "../../services/notificationService";
 function Navbar({ toggleSidebar }) {
 
@@ -32,6 +37,10 @@ function Navbar({ toggleSidebar }) {
   } = useAuth();
 
   const navigate = useNavigate();
+  const {
+  theme,
+  toggleTheme
+} = useTheme();
 
   const firstLetter =
     user?.name?.charAt(0)?.toUpperCase() ||
@@ -58,6 +67,9 @@ function Navbar({ toggleSidebar }) {
   const [profileOpen, setProfileOpen] =
     useState(false);
 
+  const [loading, setLoading] =
+   useState(false);
+
   const notificationRef =
     useRef(null);
 
@@ -68,29 +80,35 @@ function Navbar({ toggleSidebar }) {
 
     const loadNotifications = async () => {
 
-      try {
+  try {
 
-        const unreadData =
-          await getUnreadCount();
+    setLoading(true);
 
-        setUnread(
-          unreadData.unreadCount || 0
-        );
+    const unreadData =
+      await getUnreadCount();
 
-        const notificationData =
-          await getNotifications();
+    setUnread(
+      unreadData.unreadCount || 0
+    );
 
-        setNotifications(
-          notificationData.notifications || []
-        );
+    const notificationData =
+      await getNotifications();
 
-      } catch (err) {
+    setNotifications(
+      notificationData.notifications || []
+    );
 
-        console.error(err);
+  } catch (err) {
 
-      }
+    console.error(err);
 
-    };
+  } finally {
+
+    setLoading(false);
+
+  }
+
+};
 
     loadNotifications();
 
@@ -135,11 +153,108 @@ function Navbar({ toggleSidebar }) {
 
   const handleLogout = () => {
 
-    logout();
+  setProfileOpen(false);
 
-    navigate("/");
+  logout();
+
+  navigate("/");
+
+};
+  const handleNotificationClick =
+  async (notification) => {
+
+    try {
+
+      if (!notification.isRead) {
+
+        await markAsRead(
+          notification._id
+        );
+
+        setNotifications((prev) =>
+          prev.map((item) =>
+            item._id === notification._id
+              ? {
+                  ...item,
+                  isRead: true
+                }
+              : item
+          )
+        );
+
+        setUnread((prev) =>
+          Math.max(prev - 1, 0)
+        );
+
+      }
+
+      setNotificationOpen(false);
+
+      navigate(notificationPath);
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
 
   };
+
+
+const handleMarkAllRead =
+  async () => {
+
+    try {
+
+      await markAllAsRead();
+
+      setNotifications((prev) =>
+        prev.map((item) => ({
+          ...item,
+          isRead: true
+        }))
+      );
+
+      setUnread(0);
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
+
+  };
+  const formatTimeAgo = (date) => {
+
+  const seconds =
+    Math.floor(
+      (Date.now() - new Date(date)) / 1000
+    );
+
+  if (seconds < 60)
+    return "Just now";
+
+  const minutes =
+    Math.floor(seconds / 60);
+
+  if (minutes < 60)
+    return `${minutes} min ago`;
+
+  const hours =
+    Math.floor(minutes / 60);
+
+  if (hours < 24)
+    return `${hours} hr ago`;
+
+  const days =
+    Math.floor(hours / 24);
+
+  if (days === 1)
+    return "Yesterday";
+
+  return `${days} days ago`;
+
+};
 
   return (
     <header className="dashboard-navbar">
@@ -164,6 +279,20 @@ function Navbar({ toggleSidebar }) {
       </div>
 
       <div className="navbar-right">
+        <button
+  type="button"
+  className="navbar-icon-button"
+  onClick={toggleTheme}
+  title={
+    theme === "dark"
+      ? "Switch to Light Mode"
+      : "Switch to Dark Mode"
+  }
+>
+  {theme === "dark"
+    ? <FaSun />
+    : <FaMoon />}
+</button>
 
   <div
     className="notification-wrapper"
@@ -172,9 +301,31 @@ function Navbar({ toggleSidebar }) {
     <button
       type="button"
       className="navbar-icon-button"
-      onClick={() =>
-        setNotificationOpen(!notificationOpen)
-      }
+      onClick={async () => {
+
+  if (!notificationOpen) {
+
+    const unreadData =
+      await getUnreadCount();
+
+    setUnread(
+      unreadData.unreadCount || 0
+    );
+
+    const notificationData =
+      await getNotifications();
+
+    setNotifications(
+      notificationData.notifications || []
+    );
+
+  }
+
+  setNotificationOpen(
+    !notificationOpen
+  );
+
+}}
     >
       <FaBell />
 
@@ -189,25 +340,50 @@ function Navbar({ toggleSidebar }) {
       <div className="notification-dropdown">
 
         <div className="notification-header">
-          <h4>Notifications</h4>
-        </div>
+
+  <h4>Notifications</h4>
+
+  {unread > 0 && (
+    <button
+      type="button"
+      className="mark-all-btn"
+      onClick={handleMarkAllRead}
+    >
+      Mark all
+    </button>
+  )}
+
+</div>
 
         {notifications.length === 0 ? (
           <div className="notification-empty">
-            No notifications
-          </div>
+
+  <FaBell
+    className="empty-icon"
+  />
+
+  <p>
+    You're all caught up!
+  </p>
+
+</div>
         ) : (
           notifications
             .slice(0, 5)
             .map((notification) => (
               <div
-                key={notification._id}
-                className={`notification-item ${
-                  notification.isRead
-                    ? ""
-                    : "unread"
-                }`}
-              >
+  key={notification._id}
+  className={`notification-item ${
+    notification.isRead
+      ? ""
+      : "unread"
+  }`}
+  onClick={() =>
+    handleNotificationClick(
+      notification
+    )
+  }
+>
                 <strong>
                   {notification.title}
                 </strong>
@@ -217,10 +393,10 @@ function Navbar({ toggleSidebar }) {
                 </p>
 
                 <small>
-                  {new Date(
-                    notification.createdAt
-                  ).toLocaleString()}
-                </small>
+  {formatTimeAgo(
+    notification.createdAt
+  )}
+</small>
               </div>
             ))
         )}
@@ -279,11 +455,13 @@ function Navbar({ toggleSidebar }) {
       <div className="navbar-dropdown">
 
         <Link
-          to={profilePath}
-          onClick={() =>
-            setProfileOpen(false)
-          }
-        >
+  to={profilePath}
+  onClick={() => {
+
+    setProfileOpen(false);
+
+  }}
+>
           <FaUser />
           <span>Profile</span>
         </Link>

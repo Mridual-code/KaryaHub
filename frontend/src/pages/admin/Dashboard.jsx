@@ -16,8 +16,7 @@ import RecentLeaves from "../../components/common/RecentLeaves";
 
 import { useAuth } from "../../hooks/useAuth";
 
-function Dashboard() {
-
+export default function Dashboard({ role = "Admin" }) {
   const { user } = useAuth();
 
   const [dashboard, setDashboard] =
@@ -94,6 +93,8 @@ function Dashboard() {
           monthNames[item.month],
       })
     ) || [];
+    const departmentData =
+  dashboard?.charts?.departmentDistribution || [];
 
   if (loading)
     return (
@@ -163,6 +164,7 @@ function Dashboard() {
           icon={<FaCalendarAlt />}
           color="#f59e0b"
         />
+        {role === "Admin" && (
 
         <StatCard
           title="Departments"
@@ -170,43 +172,44 @@ function Dashboard() {
           icon={<FaBuilding />}
           color="#14b8a6"
         />
+  )}
 
       </div>
 
       {/* Main Chart */}
-
+      
       <div className="dashboard-chart-section">
 
-        <ChartCard
-          title="Monthly Hiring"
-          data={monthlyHiringData}
-          xKey="month"
-          dataKey="employeesJoined"
-          color="#3b82f6"
-        />
+    <ChartCard
+        title="Monthly Hiring"
+        data={monthlyHiringData}
+        xKey="month"
+        dataKey="employeesJoined"
+        color="#3b82f6"
+    />
+    {role === "Admin" && (
 
-      </div>
+    <ChartCard
+        title="Department Distribution"
+        data={departmentData}
+        xKey="departmentName"
+        dataKey="employeeCount"
+        color="#14b8a6"
+    />
+    )}
+
+</div>
        
 
       {/* Recent Data */}
 
-      <div className="dashboard-recent">
+      <RecentEmployees
+    employees={dashboard?.recent?.employees || []}
+/>
 
-        <RecentEmployees
-          employees={
-            dashboard?.recent
-              ?.employees || []
-          }
-        />
-
-        <RecentLeaves
-          leaves={
-            dashboard?.recent
-              ?.leaveRequests || []
-          }
-        />
-
-      </div>
+<RecentLeaves
+    leaves={dashboard?.recent?.leaveRequests || []}
+/>
 
     </div>
 
@@ -214,4 +217,3 @@ function Dashboard() {
 
 }
 
-export default Dashboard;

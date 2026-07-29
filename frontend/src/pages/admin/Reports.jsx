@@ -120,7 +120,7 @@ function Reports() {
 
     return (
 
-        <div>
+        <div className="reports-page">
 
             <ReportToolbar
                 title="Reports"

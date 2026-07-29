@@ -7,7 +7,7 @@ import AttendanceFilters from "../../components/attendance/AttendanceFilters";
 import AttendanceTable from "../../components/attendance/AttendanceTable";
 import AttendanceModal from "../../components/attendance/AttendanceModal";
 import AttendanceStats from "../../components/attendance/AttendanceStats";
-
+import AttendanceCalendar from "../../components/attendance/AttendanceCalendar";  
 function Attendance() {
 
     const [attendance, setAttendance] = useState([]);
@@ -25,6 +25,7 @@ function Attendance() {
     const [date, setDate] =
         useState("");
 
+
     const [selectedAttendance, setSelectedAttendance] =
         useState(null);
 
@@ -32,6 +33,11 @@ function Attendance() {
         useState(false);
         const [department, setDepartment] =
     useState("");
+    const [selectedEmployeeId, setSelectedEmployeeId] =
+    useState(null);
+
+const [calendarOpen, setCalendarOpen] =
+    useState(false);
 
     const fetchAttendance = async () => {
 
@@ -212,31 +218,59 @@ function Attendance() {
 
             ) : (
 
-                <AttendanceTable
+               <AttendanceTable
     attendance={filteredAttendance}
     onEdit={handleEdit}
     onViewCalendar={(employeeId) => {
-        console.log(employeeId);
+        setSelectedEmployeeId(employeeId);
+        setCalendarOpen(true);
     }}
 />
             )}
 
-            <AttendanceModal
-                open={modalOpen}
-                initialData={selectedAttendance}
-                onClose={() => {
+<AttendanceModal
+    open={modalOpen}
+    initialData={selectedAttendance}
+    onClose={() => {
+        setModalOpen(false);
+        setSelectedAttendance(null);
+    }}
+    onSave={handleSave}
+/>
 
-    setModalOpen(false);
+{calendarOpen && (
+    <div className="modal-overlay">
 
-    setSelectedAttendance(null);
+        <div className="calendar-modal">
 
-}}
-                onSave={handleSave}
+            <div className="calendar-header">
+
+                <h2>Employee Attendance Calendar</h2>
+
+                <button
+                    className="secondary-btn"
+                    onClick={() => {
+                        setCalendarOpen(false);
+                        setSelectedEmployeeId(null);
+                    }}
+                >
+                    Close
+                </button>
+
+            </div>
+
+            <AttendanceCalendar
+                employeeId={selectedEmployeeId}
             />
 
         </div>
 
-    );
+    </div>
+)}
+
+</div>
+
+);
 
 }
 

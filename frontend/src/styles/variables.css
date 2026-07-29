@@ -37,6 +37,22 @@
   --shadow-medium:
     0 10px 30px
     rgba(16, 24, 40, 0.08);
+    --navbar-bg: #ffffff;
+
+--sidebar-bg: #ffffff;
+
+--sidebar-hover: #f5f7fb;
+
+--sidebar-active: #e8efff;
+
+--card-bg: #ffffff;
+
+--input-bg: #ffffff;
+
+--input-border: #d0d5dd;
+
+--shadow-large:
+0 20px 40px rgba(16,24,40,.10);
 }
 
 [data-theme="dark"] {
@@ -49,4 +65,36 @@
   --text-muted: #8893a3;
 
   --border: #303846;
+  --navbar-bg:#191e28;
+
+--sidebar-bg:#191e28;
+
+--sidebar-hover:#252d39;
+
+--sidebar-active:#2d3644;
+
+--card-bg:#191e28;
+
+--input-bg:#222834;
+
+--input-border:#303846;
+
+--primary:#5b8cff;
+
+--primary-hover:#7aa0ff;
+
+--success:#22c55e;
+
+--warning:#f59e0b;
+
+--danger:#ef4444;
+
+--shadow-small:
+0 4px 10px rgba(0,0,0,.35);
+
+--shadow-medium:
+0 12px 28px rgba(0,0,0,.45);
+
+--shadow-large:
+0 20px 45px rgba(0,0,0,.55);
 }
