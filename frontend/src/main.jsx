@@ -17,6 +17,8 @@ import { AuthProvider } from "./context/AuthContext";
 import "./styles/attendance.css";
 import "./styles/employees.css";
 import "./styles/reports.css";
+import "./styles/notifications.css";
+
 createRoot(
   document.getElementById("root")
 ).render(

@@ -8,7 +8,6 @@ import {
   markAllAsRead,
   markAsRead,
 } from "../../services/notificationService";
-import "../../styles/notifications.css";
 import NotificationToolbar from "../../components/notifications/NotificationToolbar";
 import NotificationList from "../../components/notifications/NotificationList";
 import NotificationFilters from "../../components/notifications/NotificationFilters";

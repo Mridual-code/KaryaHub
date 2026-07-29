@@ -1,0 +1,282 @@
+/* ===========================================
+   Departments Page
+=========================================== */
+
+.departments-page{
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+}
+
+/* ===========================================
+   Toolbar
+=========================================== */
+
+.toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+}
+
+.toolbar input{
+    width:320px;
+    max-width:100%;
+    height:46px;
+
+    padding:0 16px;
+
+    border:1px solid var(--input-border);
+    border-radius:12px;
+
+    background:var(--input-bg);
+    color:var(--text-primary);
+
+    transition:.25s;
+}
+
+.toolbar input:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px rgba(56,89,233,.12);
+}
+
+.toolbar .primary-btn{
+    height:46px;
+    padding:0 20px;
+}
+/* ===========================================
+   Table
+=========================================== */
+
+.table-card{
+
+    overflow:hidden;
+
+    border-radius:18px;
+}
+
+.dashboard-table tbody tr{
+
+    transition:.25s;
+
+}
+
+.dashboard-table tbody tr:hover{
+
+    background:var(--surface-secondary);
+
+}
+
+.dashboard-table td{
+
+    vertical-align:middle;
+
+}
+/* ===========================================
+   Table
+=========================================== */
+
+.table-card{
+
+    overflow:hidden;
+
+    border-radius:18px;
+}
+
+.dashboard-table tbody tr{
+
+    transition:.25s;
+
+}
+
+.dashboard-table tbody tr:hover{
+
+    background:var(--surface-secondary);
+
+}
+
+.dashboard-table td{
+
+    vertical-align:middle;
+
+}
+/* ===========================================
+   Action Buttons
+=========================================== */
+
+.dashboard-table td:last-child{
+
+    display:flex;
+    gap:10px;
+
+}
+
+.dashboard-table td:last-child button{
+
+    width:38px;
+    height:38px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:var(--surface-secondary);
+
+    color:var(--text-secondary);
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.dashboard-table td:last-child button:hover{
+
+    background:var(--primary);
+
+    color:#fff;
+
+    transform:translateY(-2px);
+
+}
+.drawer{
+
+    width:420px;
+
+    max-width:95vw;
+
+    background:var(--card-bg);
+
+    border-left:1px solid var(--border);
+
+    padding:30px;
+
+}
+
+.drawer h2{
+
+    margin-top:0;
+
+    color:var(--text-primary);
+
+}
+
+.drawer p{
+
+    color:var(--text-secondary);
+
+    line-height:1.8;
+
+}
+
+.drawer .primary-btn{
+
+    width:100%;
+
+    margin-top:20px;
+
+}
+.modal{
+
+    width:450px;
+
+    max-width:95vw;
+
+    background:var(--card-bg);
+
+    border-radius:18px;
+
+    padding:28px;
+
+}
+
+.modal h2{
+
+    margin-top:0;
+
+    color:var(--text-primary);
+
+}
+
+.modal input{
+
+    width:100%;
+
+    height:46px;
+
+    margin-top:16px;
+
+    padding:0 14px;
+
+    border:1px solid var(--input-border);
+
+    border-radius:12px;
+
+    background:var(--input-bg);
+
+    color:var(--text-primary);
+
+    box-sizing:border-box;
+
+}
+
+.modal input:focus{
+
+    outline:none;
+
+    border-color:var(--primary);
+
+}
+
+.modal-actions{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:12px;
+
+    margin-top:24px;
+
+}
+@media(max-width:768px){
+
+.toolbar{
+
+flex-direction:column;
+
+align-items:stretch;
+
+}
+
+.toolbar input{
+
+width:100%;
+
+}
+
+.dashboard-table{
+
+font-size:14px;
+
+}
+
+.drawer{
+
+width:100%;
+
+}
+
+.modal{
+
+width:100%;
+
+}
+
+}

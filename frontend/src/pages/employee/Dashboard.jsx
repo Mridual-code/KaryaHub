@@ -7,7 +7,6 @@ import EmployeeStats from "../../components/dashboard/EmployeeStats";
 import TodayAttendanceCard from "../../components/dashboard/TodayAttendanceCard";
 import LeaveSummaryCard from "../../components/dashboard/LeaveSummaryCard";
 import RecentAttendance from "../../components/dashboard/RecentAttendance";
-import NotificationCard from "../../components/notifications/NotificationCard";
 
 function EmployeeDashboard() {
 
@@ -58,7 +57,7 @@ function EmployeeDashboard() {
 
     return (
 
-        <main className="page dashboard-page">
+        <main className="page dashboard-page employee-dashboard">
 
             <EmployeeWelcome
                 employee={dashboard.employee}
@@ -92,11 +91,7 @@ function EmployeeDashboard() {
                     }
                 />
 
-                <div className="dashboard-card">
-    <h3>Recent Notifications</h3>
-    <p>No notifications yet.</p>
-</div>
-
+                
             </div>
 
         </main>

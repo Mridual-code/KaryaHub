@@ -6,7 +6,7 @@ import DepartmentToolbar from "../../components/departments/DepartmentToolbar";
 import DepartmentTable from "../../components/departments/DepartmentTable";
 import DepartmentDrawer from "../../components/departments/DepartmentDrawer";
 import DepartmentModal from "../../components/departments/DepartmentModal";
-
+import "../../styles/departments.css";
 function Departments() {
 
     const [departments, setDepartments] = useState([]);
@@ -112,7 +112,7 @@ function Departments() {
 
     return (
 
-        <div>
+        <div className="departments-page">
 
             <DepartmentToolbar
                 search={search}
