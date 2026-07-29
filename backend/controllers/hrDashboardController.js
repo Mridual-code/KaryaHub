@@ -151,12 +151,36 @@ const getHrDashboard = async (
       activeEmployees - markedToday,
       0
     );
+    const monthlyHiring = await Employee.aggregate([
+  {
+    $group: {
+      _id: {
+        month: {
+          $month: "$createdAt"
+        }
+      },
+      employeesJoined: {
+        $sum: 1
+      }
+    }
+  },
+  {
+    $sort: {
+      "_id.month": 1
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      month: "$_id.month",
+      employeesJoined: 1
+    }
+  }
+]);
 
     return res.status(200).json({
-      message:
-        "HR dashboard fetched successfully",
 
-      summary: {
+    summary: {
         totalEmployees,
         activeEmployees,
         pendingLeaveRequests,
@@ -165,20 +189,25 @@ const getHrDashboard = async (
         halfDayToday,
         onLeaveToday,
         unmarkedToday
-      },
+    },
 
-      recent: {
+    charts: {
+        monthlyHiring
+    },
+
+    recent: {
         employees: recentEmployees,
         attendance: recentAttendance,
-        leaveRequests:
-          recentLeaveRequests
-      }
-    });
+        leaveRequests: recentLeaveRequests
+    }
+
+});
   } catch (error) {
     console.error(
       "HR dashboard error:",
       error
     );
+    
 
     return res.status(500).json({
       message:
