@@ -10,13 +10,10 @@ const generateToken = (userId) => {
     }
   );
 };
+
 const loginUser = async (req, res) => {
   console.log("LOGIN HIT");
   console.log(req.body);
-
-  // existing code...
-};
-const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
