@@ -10,7 +10,13 @@ const authMiddleware = require(
 );
 
 const router = express.Router();
+const express = require("express");
 
+const router = express.Router();
+
+router.get("/test", (req, res) => {
+  res.json({ message: "Auth route works" });
+});
 router.post("/login", loginUser);
 
 router.get(
