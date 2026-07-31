@@ -128,12 +128,7 @@ export default function Dashboard({ role = "Admin" }) {
           <strong>
             KaryaHub
           </strong>.
-          Manage employees,
-          attendance,
-          departments,
-          leave requests
-          and reports
-          from one place.
+      
         </p>
 
       </div>

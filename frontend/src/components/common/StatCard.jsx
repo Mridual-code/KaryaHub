@@ -21,7 +21,7 @@ function StatCard({
 
       <div className="stat-card-content">
         <span className="stat-card-title">
-          {title}dashbo
+          {title}
         </span>
 
         <h2 className="stat-card-value">
